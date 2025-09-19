@@ -54,7 +54,7 @@ export default function HomePage() {
         const data = await response.json();
         const hasFirecrawl = data.environmentStatus.FIRECRAWL_API_KEY;
         const hasOpenAI = data.environmentStatus.OPENAI_API_KEY;
-        
+
         if (!hasFirecrawl) {
           // Check localStorage for saved API key
           const savedKey = localStorage.getItem('firecrawl_api_key');
@@ -62,7 +62,7 @@ export default function HomePage() {
             setFirecrawlApiKey(savedKey);
           }
         }
-        
+
         if (!hasOpenAI) {
           // Check localStorage for saved API key
           const savedKey = localStorage.getItem('openai_api_key');
@@ -136,7 +136,7 @@ export default function HomePage() {
     const hasEnvOpenAI = data.environmentStatus.OPENAI_API_KEY;
     const hasSavedFirecrawl = localStorage.getItem('firecrawl_api_key');
     const hasSavedOpenAI = localStorage.getItem('openai_api_key');
-    
+
     const needsFirecrawl = !hasEnvFirecrawl && !hasSavedFirecrawl;
     const needsOpenAI = !hasEnvOpenAI && !hasSavedOpenAI;
 
@@ -144,7 +144,7 @@ export default function HomePage() {
       toast.error('Please enter a valid Firecrawl API key');
       return;
     }
-    
+
     if (needsOpenAI && !openaiApiKey.trim()) {
       toast.error('Please enter a valid OpenAI API key');
       return;
@@ -167,11 +167,11 @@ export default function HomePage() {
         if (!response.ok) {
           throw new Error('Invalid Firecrawl API key');
         }
-        
+
         // Save the API key to localStorage
         localStorage.setItem('firecrawl_api_key', firecrawlApiKey);
       }
-      
+
       // Save OpenAI API key if provided
       if (openaiApiKey) {
         localStorage.setItem('openai_api_key', openaiApiKey);
@@ -197,17 +197,20 @@ export default function HomePage() {
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-4 max-w-7xl mx-auto font-inter">
       <div className="flex justify-between items-center">
-        <Link href="https://www.firecrawl.dev/?utm_source=tool-csv-enrichment" target="_blank" rel="noopener noreferrer">
+        <Link href="https://www.firecrawl.dev/?utm_source=tool-csv-enrichment" className="flex items-end justify-center gap-2" target="_blank" rel="noopener noreferrer">
           <Image
-            src="/firecrawl-logo-with-fire.png"
+            src="/firecrawl-logo-animated.svg"
             alt="Firecrawl Logo"
-            width={113}
-            height={24}
+            className="fill-orange-300"
+            width={30}
+            height={30}
           />
+          <h1 className="font-semibold tracking-tight text-lg">Fire Enrich</h1>
         </Link>
         <Button
           asChild
           variant="code"
+          size="code"
           className="font-medium flex items-center gap-2"
         >
           <a
@@ -225,16 +228,16 @@ export default function HomePage() {
 
       <div className="text-center pt-8 pb-6">
         <h1 className="text-[2.5rem] lg:text-[3.8rem] text-[#36322F] dark:text-white font-semibold tracking-tight leading-[0.9] opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:200ms] [animation-fill-mode:forwards]">
-          <span className="relative px-1 text-transparent bg-clip-text bg-gradient-to-tr from-red-600 to-yellow-500 inline-flex justify-center items-center">
+          <span className="relative px-1 text-transparent tracking-tighter bg-clip-text bg-[#FF4D00] inline-flex justify-center items-center">
             Fire Enrich
           </span>
-          <span className="block leading-[1.1] opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:400ms] [animation-fill-mode:forwards]">
+          <span className="block text-black tracking-tighter leading-[1.1] opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:400ms] [animation-fill-mode:forwards]">
             Drag, Drop, Enrich.
           </span>
         </h1>
         <p className="text-sm text-muted-foreground mt-3 opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:600ms] [animation-fill-mode:forwards]">
-          {FIRE_ENRICH_CONFIG.FEATURES.IS_UNLIMITED ? 
-            'Unlimited enrichment' : 
+          {FIRE_ENRICH_CONFIG.FEATURES.IS_UNLIMITED ?
+            'Unlimited enrichment' :
             `Hosted limit: ${FIRE_ENRICH_CONFIG.CSV_LIMITS.MAX_ROWS} rows, ${FIRE_ENRICH_CONFIG.CSV_LIMITS.MAX_COLUMNS} columns • Self-deployment: Unlimited`
           }
         </p>
@@ -248,60 +251,60 @@ export default function HomePage() {
         </div>
       ) : (
         <div className="bg-[#FBFAF9] p-4 sm:p-6 rounded-lg shadow-sm">
-        {step === 'setup' && (
-          <Button
-            variant="code"
-            size="sm"
-            onClick={handleBack}
-            className="mb-4 flex items-center gap-1.5"
-          >
-            <ArrowLeft size={16} />
-            Back
-          </Button>
-        )}
+          {step === 'setup' && (
+            <Button
+              variant="code"
+              size="sm"
+              onClick={handleBack}
+              className="mb-4 flex items-center gap-1.5"
+            >
+              <ArrowLeft size={16} />
+              Back
+            </Button>
+          )}
 
-        {step === 'upload' && (
-          <CSVUploader onUpload={handleCSVUpload} />
-        )}
+          {step === 'upload' && (
+            <CSVUploader onUpload={handleCSVUpload} />
+          )}
 
-        {step === 'setup' && csvData && (
-          <UnifiedEnrichmentView
-            rows={csvData.rows}
-            columns={csvData.columns}
-            onStartEnrichment={handleStartEnrichment}
-          />
-        )}
-
-        {step === 'enrichment' && csvData && (
-          <>
-            <div className="mb-4">
-              <h2 className="text-xl font-semibold mb-1">Enrichment Results</h2>
-              <p className="text-sm text-muted-foreground">
-                Click on any row to view detailed information
-              </p>
-            </div>
-            <EnrichmentTable
+          {step === 'setup' && csvData && (
+            <UnifiedEnrichmentView
               rows={csvData.rows}
-              fields={selectedFields}
-              emailColumn={emailColumn}
+              columns={csvData.columns}
+              onStartEnrichment={handleStartEnrichment}
             />
-            <div className="mt-6 text-center">
-              <Button
-                variant="orange"
-                onClick={resetProcess}
-              >
-                Start New Enrichment
-              </Button>
-            </div>
-          </>
-        )}
+          )}
+
+          {step === 'enrichment' && csvData && (
+            <>
+              <div className="mb-4">
+                <h2 className="text-xl font-semibold mb-1">Enrichment Results</h2>
+                <p className="text-sm text-muted-foreground">
+                  Click on any row to view detailed information
+                </p>
+              </div>
+              <EnrichmentTable
+                rows={csvData.rows}
+                fields={selectedFields}
+                emailColumn={emailColumn}
+              />
+              <div className="mt-6 text-center">
+                <Button
+                  variant="orange"
+                  onClick={resetProcess}
+                >
+                  Start New Enrichment
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
-      <footer className="py-8 text-center text-sm text-gray-600 dark:text-gray-400">
+      <footer className="py-8 text-center text-sm text-gray-600 ">
         <p>
           Powered by{' '}
-          <Link href="https://www.firecrawl.dev" target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-medium">
+          <Link href="https://www.firecrawl.dev" target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:text-orange-700 font-medium">
             Firecrawl
           </Link>
         </p>
@@ -309,7 +312,7 @@ export default function HomePage() {
 
       {/* API Key Modal */}
       <Dialog open={showApiKeyModal} onOpenChange={setShowApiKeyModal}>
-        <DialogContent className="sm:max-w-md bg-white dark:bg-zinc-900">
+        <DialogContent className="sm:max-w-md bg-white">
           <DialogHeader>
             <DialogTitle>API Keys Required</DialogTitle>
             <DialogDescription>
@@ -343,7 +346,7 @@ export default function HomePage() {
                 </div>
               </>
             )}
-            
+
             {missingKeys.openai && (
               <>
                 <Button
@@ -387,7 +390,7 @@ export default function HomePage() {
             <Button
               onClick={handleApiKeySubmit}
               disabled={isValidatingApiKey || !firecrawlApiKey.trim()}
-              variant="code"
+              variant="orange"
             >
               {isValidatingApiKey ? (
                 <>

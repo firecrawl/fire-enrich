@@ -48,7 +48,7 @@ export function CSVUploader({ onUpload }: CSVUploaderProps) {
         }
 
         // Filter out empty rows
-        const validRows = rows.filter(row => 
+        const validRows = rows.filter(row =>
           Object.values(row).some(value => value && String(value).trim() !== '')
         );
 
@@ -107,15 +107,15 @@ export function CSVUploader({ onUpload }: CSVUploaderProps) {
           relative overflow-hidden
           border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
           transition-all duration-300 ease-out
-          ${isDragActive 
-            ? 'border-orange-500 bg-orange-50 scale-[1.02] shadow-xl dark:bg-orange-950/20 dark:border-orange-400' 
-            : 'border-zinc-300 hover:border-orange-400 bg-white hover:bg-orange-50/30 hover:shadow-lg hover:scale-[1.01] dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-orange-950/10 dark:hover:border-orange-700'
+          ${isDragActive
+            ? 'border-orange-500 bg-orange-50 scale-[1.02] shadow-xl dark:border-orange-400'
+            : 'border-zinc-300 hover:border-orange-400 bg-white hover:shadow-lg hover:scale-[1.01]'
           }
           ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}
         `}
       >
         <input {...getInputProps()} disabled={isProcessing} />
-        
+
         {/* Background pattern */}
         <div className="absolute inset-0 opacity-5 dark:opacity-10">
           <div className="absolute inset-0" style={{
@@ -123,16 +123,16 @@ export function CSVUploader({ onUpload }: CSVUploaderProps) {
             backgroundSize: '32px 32px'
           }} />
         </div>
-        
+
         <div className="relative">
           <div className={`
             w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center
             transition-all duration-300
-            ${isDragActive ? 'bg-orange-500 scale-110 rotate-3' : 'bg-orange-500'}
+            ${isDragActive ? 'bg-orange-500' : 'bg-orange-600'}
           `}>
             <FileSpreadsheet className="w-8 h-8 text-white" />
           </div>
-          
+
           {isDragActive ? (
             <div className="animate-fade-in">
               <p className="text-xl font-semibold text-orange-600 mb-1">Drop it here!</p>
@@ -140,13 +140,13 @@ export function CSVUploader({ onUpload }: CSVUploaderProps) {
             </div>
           ) : (
             <>
-              <p className="text-lg font-medium text-[#36322F] mb-1 dark:text-white">
+              <p className="text-lg font-medium text-[#36322F] mb-1">
                 Drag & drop your CSV file here
               </p>
               <p className="text-sm text-muted-foreground mb-4">
                 or click to browse from your computer
               </p>
-              <Button 
+              <Button
                 variant="orange"
                 size="sm"
                 disabled={isProcessing}
@@ -176,10 +176,10 @@ export function CSVUploader({ onUpload }: CSVUploaderProps) {
       )}
 
       <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
-        <a 
-          href="/sample-data.csv" 
+        <a
+          href="/sample-data.csv"
           download="sample-data.csv"
-          className="block p-3 bg-orange-50 rounded-lg border border-orange-200 dark:bg-orange-950/20 dark:border-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-950/30 transition-colors cursor-pointer"
+          className="block p-3 rounded-lg hover:rounded-none border border-zinc-200 hover:bg-zinc-100 transition-all duration-300 cursor-pointer"
         >
           <div className="flex items-center gap-2 mb-1">
             <div className="w-6 h-6 bg-orange-500 rounded flex items-center justify-center">
@@ -187,34 +187,34 @@ export function CSVUploader({ onUpload }: CSVUploaderProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
               </svg>
             </div>
-            <h3 className="text-sm font-medium text-[#36322F] dark:text-white">Download Sample</h3>
+            <h3 className="text-sm font-medium text-[#36322F]">Download Sample</h3>
           </div>
           <p className="text-xs text-muted-foreground">Try our sample CSV file</p>
         </a>
-        
-        <div className="p-3 bg-zinc-100 rounded-lg border border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700">
+
+        <div className="p-3 bg-zinc-100 rounded-lg border border-zinc-200">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-6 h-6 bg-[#36322F] rounded flex items-center justify-center dark:bg-zinc-700">
               <span className="text-white text-xs font-bold">@</span>
             </div>
-            <h3 className="text-sm font-medium text-[#36322F] dark:text-white">Email Required</h3>
+            <h3 className="text-sm font-medium text-[#36322F]">Email Required</h3>
           </div>
           <p className="text-xs text-muted-foreground">Must contain email addresses</p>
         </div>
-        
-        <div className="p-3 bg-zinc-100 rounded-lg border border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700">
+
+        <div className="p-3 bg-zinc-100 rounded-lg border border-zinc-200">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-6 h-6 bg-[#36322F] rounded flex items-center justify-center dark:bg-zinc-700">
               <span className="text-white text-xs font-bold">
                 {FIRE_ENRICH_CONFIG.FEATURES.IS_UNLIMITED ? '∞' : FIRE_ENRICH_CONFIG.CSV_LIMITS.MAX_ROWS}
               </span>
             </div>
-            <h3 className="text-sm font-medium text-[#36322F] dark:text-white">
+            <h3 className="text-sm font-medium text-[#36322F] ">
               {FIRE_ENRICH_CONFIG.FEATURES.IS_UNLIMITED ? 'Unlimited Mode' : 'Row Limit'}
             </h3>
           </div>
           <p className="text-xs text-muted-foreground">
-            {FIRE_ENRICH_CONFIG.FEATURES.IS_UNLIMITED 
+            {FIRE_ENRICH_CONFIG.FEATURES.IS_UNLIMITED
               ? 'Unlimited rows and columns'
               : (
                 <>

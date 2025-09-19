@@ -53,7 +53,7 @@ export default function CSVEnrichmentPage() {
         const data = await response.json();
         const hasFirecrawl = data.environmentStatus.FIRECRAWL_API_KEY;
         const hasOpenAI = data.environmentStatus.OPENAI_API_KEY;
-        
+
         if (!hasFirecrawl) {
           // Check localStorage for saved API key
           const savedKey = localStorage.getItem('firecrawl_api_key');
@@ -61,7 +61,7 @@ export default function CSVEnrichmentPage() {
             setFirecrawlApiKey(savedKey);
           }
         }
-        
+
         if (!hasOpenAI) {
           // Check localStorage for saved API key
           const savedKey = localStorage.getItem('openai_api_key');
@@ -135,7 +135,7 @@ export default function CSVEnrichmentPage() {
     const hasEnvOpenAI = data.environmentStatus.OPENAI_API_KEY;
     const hasSavedFirecrawl = localStorage.getItem('firecrawl_api_key');
     const hasSavedOpenAI = localStorage.getItem('openai_api_key');
-    
+
     const needsFirecrawl = !hasEnvFirecrawl && !hasSavedFirecrawl;
     const needsOpenAI = !hasEnvOpenAI && !hasSavedOpenAI;
 
@@ -143,7 +143,7 @@ export default function CSVEnrichmentPage() {
       toast.error('Please enter a valid Firecrawl API key');
       return;
     }
-    
+
     if (needsOpenAI && !openaiApiKey.trim()) {
       toast.error('Please enter a valid OpenAI API key');
       return;
@@ -166,11 +166,11 @@ export default function CSVEnrichmentPage() {
         if (!response.ok) {
           throw new Error('Invalid Firecrawl API key');
         }
-        
+
         // Save the API key to localStorage
         localStorage.setItem('firecrawl_api_key', firecrawlApiKey);
       }
-      
+
       // Save OpenAI API key if provided
       if (openaiApiKey) {
         localStorage.setItem('openai_api_key', openaiApiKey);
@@ -241,53 +241,53 @@ export default function CSVEnrichmentPage() {
         </div>
       ) : (
         <div className="bg-[#FBFAF9] p-4 sm:p-6 rounded-lg shadow-sm">
-        {step === 'setup' && (
-          <Button
-            variant="code"
-            size="sm"
-            onClick={handleBack}
-            className="mb-4 flex items-center gap-1.5"
-          >
-            <ArrowLeft size={16} />
-            Back
-          </Button>
-        )}
+          {step === 'setup' && (
+            <Button
+              variant="code"
+              size="sm"
+              onClick={handleBack}
+              className="mb-4 flex items-center gap-1.5"
+            >
+              <ArrowLeft size={16} />
+              Back
+            </Button>
+          )}
 
-        {step === 'upload' && (
-          <CSVUploader onUpload={handleCSVUpload} />
-        )}
+          {step === 'upload' && (
+            <CSVUploader onUpload={handleCSVUpload} />
+          )}
 
-        {step === 'setup' && csvData && (
-          <UnifiedEnrichmentView
-            rows={csvData.rows}
-            columns={csvData.columns}
-            onStartEnrichment={handleStartEnrichment}
-          />
-        )}
-
-        {step === 'enrichment' && csvData && (
-          <>
-            <div className="mb-4">
-              <h2 className="text-xl font-semibold mb-1">Enrichment Results</h2>
-              <p className="text-sm text-muted-foreground">
-                Click on any row to view detailed information
-              </p>
-            </div>
-            <EnrichmentTable
+          {step === 'setup' && csvData && (
+            <UnifiedEnrichmentView
               rows={csvData.rows}
-              fields={selectedFields}
-              emailColumn={emailColumn}
+              columns={csvData.columns}
+              onStartEnrichment={handleStartEnrichment}
             />
-            <div className="mt-6 text-center">
-              <Button
-                variant="orange"
-                onClick={resetProcess}
-              >
-                Start New Enrichment
-              </Button>
-            </div>
-          </>
-        )}
+          )}
+
+          {step === 'enrichment' && csvData && (
+            <>
+              <div className="mb-4">
+                <h2 className="text-xl font-semibold mb-1">Enrichment Results</h2>
+                <p className="text-sm text-muted-foreground">
+                  Click on any row to view detailed information
+                </p>
+              </div>
+              <EnrichmentTable
+                rows={csvData.rows}
+                fields={selectedFields}
+                emailColumn={emailColumn}
+              />
+              <div className="mt-6 text-center">
+                <Button
+                  variant="orange"
+                  onClick={resetProcess}
+                >
+                  Start New Enrichment
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -340,7 +340,7 @@ export default function CSVEnrichmentPage() {
                 </div>
               </>
             )}
-            
+
             {missingKeys.openai && (
               <>
                 <Button
