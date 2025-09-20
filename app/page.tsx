@@ -211,7 +211,7 @@ export default function HomePage() {
           asChild
           variant="code"
           size="code"
-          className="font-medium flex items-center gap-2"
+          className="font-medium flex items-center gap-2 tracking-tight"
         >
           <a
             href="https://github.com/mendableai/fire-enrich"
@@ -278,8 +278,8 @@ export default function HomePage() {
           {step === 'enrichment' && csvData && (
             <>
               <div className="mb-4">
-                <h2 className="text-xl font-semibold mb-1">Enrichment Results</h2>
-                <p className="text-sm text-muted-foreground">
+                <h2 className="text-xl font-semibold tracking-tight mb-1">Enrichment Results</h2>
+                <p className="text-sm text-muted-foreground tracking-tight">
                   Click on any row to view detailed information
                 </p>
               </div>
@@ -288,7 +288,7 @@ export default function HomePage() {
                 fields={selectedFields}
                 emailColumn={emailColumn}
               />
-              <div className="mt-6 text-center">
+              <div className="mt-6 text-center tracking-tight">
                 <Button
                   variant="orange"
                   onClick={resetProcess}
@@ -301,11 +301,17 @@ export default function HomePage() {
         </div>
       )}
 
-      <footer className="py-8 text-center text-sm text-gray-600 ">
+      <footer className="py-8 text-center tracking-tight text-sm text-gray-600 ">
         <p>
           Powered by{' '}
           <Link href="https://www.firecrawl.dev" target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:text-orange-700 font-medium">
             Firecrawl
+          </Link>
+          {' '}
+          and
+          {' '}
+          <Link href="https://openai.com" target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:text-orange-700 font-medium">
+            OpenAI
           </Link>
         </p>
       </footer>

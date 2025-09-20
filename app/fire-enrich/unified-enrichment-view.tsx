@@ -191,7 +191,7 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                   <TableHead
                     key={`new-${idx}`}
                     className={cn(
-                      "font-semibold transition-all duration-700 bg-orange-50 text-orange-900 dark:bg-orange-950/20 dark:text-orange-400",
+                      "font-semibold transition-all duration-700 bg-orange-50 text-orange-900  ",
                       "animate-in fade-in slide-in-from-right-2"
                     )}
                     style={{
@@ -269,7 +269,7 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                         animationFillMode: 'backwards'
                       }}
                     >
-                      <div className="h-5 rounded-full bg-gradient-to-r from-zinc-200 to-zinc-300 animate-pulse dark:from-zinc-700 dark:to-zinc-600" />
+                      <div className="h-5 rounded-full bg-gradient-to-r from-zinc-200 to-zinc-300 animate-pulse  " />
                     </TableCell>
                   ))}
                   {step >= 2 && selectedFields.length > maxVisibleFields && (
@@ -285,7 +285,7 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
         {!showAllRows && rows.length > 3 && (
           <button
             onClick={() => setShowAllRows(true)}
-            className="text-sm text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 mt-2 font-medium"
+            className="text-sm text-orange-600 hover:text-orange-700   mt-2 font-medium"
           >
             Show {rows.length - 3} more rows →
           </button>
@@ -293,7 +293,7 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
         {showAllRows && (
           <button
             onClick={() => setShowAllRows(false)}
-            className="text-sm text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 mt-2 font-medium"
+            className="text-sm text-orange-600 hover:text-orange-700   mt-2 font-medium"
           >
             Show less
           </button>
@@ -321,7 +321,6 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                           variant="ghost"
                           size="sm"
                           onClick={() => setShowEmailDropdownStep1(true)}
-                          className="text-heat hover:text-orange-500 px-2 py-1 h-auto"
                         >
                           Change
                         </Button>
@@ -346,10 +345,10 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                     </>
                   ) : (
                     <Select value={emailColumn} onValueChange={(value) => setEmailColumn(value)}>
-                      <SelectTrigger className="w-64 bg-white border-orange-300 dark:bg-zinc-800 dark:border-orange-700">
+                      <SelectTrigger className="w-64 bg-white border-orange-300  ">
                         <SelectValue placeholder="Select email column" />
                       </SelectTrigger>
-                      <SelectContent className="bg-white dark:bg-zinc-800">
+                      <SelectContent className="bg-white ">
                         {columns.map((col) => (
                           <SelectItem key={col} value={col}>
                             {col}
@@ -398,19 +397,18 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
 
         {/* Email column info for step 2+ */}
         {step >= 2 && (
-          <div className="mb-4 flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200 dark:bg-orange-950/20 dark:border-orange-900/30">
+          <div className="mb-4 flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200 ">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Email Column:</span>
-              <span className="font-mono text-sm bg-white px-3 py-1 rounded-full border border-orange-300 text-orange-700 dark:bg-zinc-800 dark:border-orange-700 dark:text-orange-400">
+              <span className="text-sm font-medium text-zinc-700">Email Column:</span>
+              <span className="font-mono text-sm bg-white px-3 py-1 rounded-full border border-orange-300 text-orange-700   ">
                 {emailColumn}
               </span>
             </div>
             {!showEmailDropdown && (
               <Button
-                variant="ghost"
+                variant="orange"
                 size="sm"
                 onClick={() => setShowEmailDropdown(true)}
-                className="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300"
               >
                 Change
               </Button>
@@ -420,10 +418,10 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                 setEmailColumn(value);
                 setShowEmailDropdown(false);
               }}>
-                <SelectTrigger className="w-48 bg-white border-orange-300 dark:bg-zinc-800 dark:border-orange-700">
+                <SelectTrigger className="w-48 bg-white border-orange-300  ">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-zinc-800">
+                <SelectContent className="bg-white ">
                   {columns.map((col) => (
                     <SelectItem key={col} value={col}>
                       {col}
@@ -438,9 +436,9 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
         {/* Step 2: Field Selection */}
         {step === 2 && (
           <div className="space-y-4">
-            <Card className="p-4 border-zinc-200 dark:border-zinc-800">
+            <Card className="p-4 border-zinc-200 ">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-[#36322F] dark:text-white">
+                <h3 className="text-xl font-bold text-[#36322F] ">
                   Select fields to enrich ({selectedFields.length}/10)
                 </h3>
                 {/* Selected fields counter */}
@@ -465,8 +463,8 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                         className={cn(
                           "px-2 py-1 text-xs rounded-full transition-all duration-200 font-medium",
                           isSelected
-                            ? "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
-                            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700",
+                            ? "bg-zinc-900 text-white hover:bg-zinc-800   "
+                            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200   ",
                           selectedFields.length >= 10 && !isSelected && "opacity-50 cursor-not-allowed"
                         )}
                       >
@@ -486,7 +484,7 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Natural Language Card */}
-                  <Card className="p-4 border-orange-200 hover:border-orange-300 transition-all duration-300 dark:border-orange-900/30 dark:hover:border-orange-800/50">
+                  <Card className="p-4 border-orange-200 hover:border-orange-300 transition-all duration-300  ">
                     <Button
                       variant="ghost"
                       className="w-full justify-between p-0 hover:bg-transparent"
@@ -506,7 +504,7 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                           value={naturalLanguageInput}
                           onChange={(e) => setNaturalLanguageInput(e.target.value)}
                           rows={3}
-                          className="border-orange-200 focus:border-orange-400 dark:border-orange-900/30 dark:focus:border-orange-700"
+                          className=""
                         />
                         <Button
                           onClick={handleGenerateFields}
@@ -521,7 +519,7 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                   </Card>
 
                   {/* Manual Add Card */}
-                  <Card className="p-4 border-orange-200 hover:border-orange-300 transition-all duration-300 dark:border-orange-900/30 dark:hover:border-orange-800/50">
+                  <Card className="p-4 border-orange-200 hover:border-orange-300 transition-all duration-300  ">
                     <Button
                       variant="ghost"
                       className="w-full justify-between p-0 hover:bg-transparent"
@@ -540,14 +538,14 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                           placeholder="Field name"
                           value={customField.name}
                           onChange={(e) => setCustomField({ ...customField, name: e.target.value })}
-                          className="w-full border-orange-200 focus:border-orange-400 dark:border-orange-900/30 dark:focus:border-orange-700"
+                          className="w-full"
                         />
                         <Textarea
                           placeholder="Field description"
                           value={customField.description}
                           onChange={(e) => setCustomField({ ...customField, description: e.target.value })}
                           rows={2}
-                          className="w-full border-orange-200 focus:border-orange-400 dark:border-orange-900/30 dark:focus:border-orange-700"
+                          className="w-full"
                         />
                         <Select
                           value={customField.type}
@@ -555,7 +553,7 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                             setCustomField({ ...customField, type: value })
                           }
                         >
-                          <SelectTrigger className="w-full border-orange-200 focus:border-orange-400">
+                          <SelectTrigger className="w-full ">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -602,7 +600,7 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                           </Button>
                           <Button
                             size="sm"
-                            className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                            className="bg-zinc-900 text-white hover:bg-zinc-800   "
                             onClick={() => setSuggestedFields(suggestedFields.filter((_, i) => i !== idx))}
                           >
                             Reject
