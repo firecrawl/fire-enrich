@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { CSVRow, EnrichmentField } from "@/lib/types";
 import { detectEmailColumn, EMAIL_REGEX } from "@/lib/utils/email-detection";
 import { generateVariableName } from "@/lib/utils/field-utils";
-import { X, Plus, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
+import { X, Plus, Sparkles, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -306,34 +306,42 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
         {step === 1 && (
           <div className="space-y-4">
             <Card className="p-5 border-zinc-200">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <h3 className="text-lg font-bold text-graphite ">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                {/* Left Section */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+                  <h3 className="text-lg font-bold text-graphite">
                     {emailColumn ? 'Email Column Detected:' : 'Select Email Column:'}
                   </h3>
+
                   {emailColumn ? (
-                    <>
-                      <span className="font-mono text-sm bg-orange-100 px-3 py-1 rounded-full border border-orange-300 text-orange-700 font-medium">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+                      <span className="font-mono text-sm bg-orange-100 px-3 py-1 rounded-full border border-orange-300 text-orange-700 font-medium w-fit">
                         {emailColumn}
                       </span>
+
                       {!showEmailDropdownStep1 && (
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setShowEmailDropdownStep1(true)}
+                          className="w-fit"
                         >
                           Change
                         </Button>
                       )}
+
                       {showEmailDropdownStep1 && (
-                        <Select value={emailColumn} onValueChange={(value) => {
-                          setEmailColumn(value);
-                          setShowEmailDropdownStep1(false);
-                        }}>
-                          <SelectTrigger className="w-48 bg-white border-zinc-200">
+                        <Select
+                          value={emailColumn}
+                          onValueChange={(value) => {
+                            setEmailColumn(value);
+                            setShowEmailDropdownStep1(false);
+                          }}
+                        >
+                          <SelectTrigger className="w-full sm:w-48 bg-white border-zinc-200">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-white ">
+                          <SelectContent className="bg-white max-h-60">
                             {columns.map((col) => (
                               <SelectItem key={col} value={col}>
                                 {col}
@@ -342,13 +350,13 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                           </SelectContent>
                         </Select>
                       )}
-                    </>
+                    </div>
                   ) : (
                     <Select value={emailColumn} onValueChange={(value) => setEmailColumn(value)}>
-                      <SelectTrigger className="w-64 bg-white border-orange-300  ">
+                      <SelectTrigger className="w-full sm:w-64 bg-white border-orange-300">
                         <SelectValue placeholder="Select email column" />
                       </SelectTrigger>
-                      <SelectContent className="bg-white ">
+                      <SelectContent className="bg-white max-h-60">
                         {columns.map((col) => (
                           <SelectItem key={col} value={col}>
                             {col}
@@ -359,11 +367,12 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                   )}
                 </div>
 
+                {/* Right Section */}
                 <Button
                   variant="orange"
                   onClick={() => setStep(2)}
                   disabled={!emailColumn}
-                  className="px-6"
+                  className="px-6 w-full sm:w-auto"
                 >
                   Next
                 </Button>
@@ -397,39 +406,48 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
 
         {/* Email column info for step 2+ */}
         {step >= 2 && (
-          <div className="mb-4 flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200 ">
-            <div className="flex items-center gap-2">
+          <div className="mb-4 flex flex-col sm:flex-row gap-3 justify-between p-4 bg-orange-50 rounded-lg border border-orange-200">
+            <div className="flex flex-row  sm:items-center gap-2">
               <span className="text-sm font-medium text-zinc-700">Email Column:</span>
-              <span className="font-mono text-sm bg-white px-3 py-1 rounded-full border border-orange-300 text-orange-700   ">
+              <span className="font-mono text-sm bg-white px-3 py-1 rounded-full border border-orange-300 text-orange-700 w-fit">
                 {emailColumn}
               </span>
             </div>
-            {!showEmailDropdown && (
-              <Button
-                variant="orange"
-                size="sm"
-                onClick={() => setShowEmailDropdown(true)}
-              >
-                Change
-              </Button>
-            )}
-            {showEmailDropdown && (
-              <Select value={emailColumn} onValueChange={(value) => {
-                setEmailColumn(value);
-                setShowEmailDropdown(false);
-              }}>
-                <SelectTrigger className="w-48 bg-white border-orange-300  ">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-white ">
-                  {columns.map((col) => (
-                    <SelectItem key={col} value={col}>
-                      {col}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+
+            {/* Right: Change / Dropdown */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+              {!showEmailDropdown && (
+                <Button
+                  variant="orange"
+                  size="sm"
+                  onClick={() => setShowEmailDropdown(true)}
+                  className="w-full sm:w-auto"
+                >
+                  Change
+                </Button>
+              )}
+
+              {showEmailDropdown && (
+                <Select
+                  value={emailColumn}
+                  onValueChange={(value) => {
+                    setEmailColumn(value);
+                    setShowEmailDropdown(false);
+                  }}
+                >
+                  <SelectTrigger className="w-full sm:w-48 bg-white border-orange-300">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white max-h-60">
+                    {columns.map((col) => (
+                      <SelectItem key={col} value={col}>
+                        {col}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </div>
         )}
 
@@ -494,7 +512,7 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                         <Sparkles size={18} className="text-orange-500" />
                         Add with natural language
                       </span>
-                      {showNaturalLanguage ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      <ChevronDown size={16} className={`transition-transform ${showNaturalLanguage ? "rotate-180" : ""}`} />
                     </Button>
 
                     {showNaturalLanguage && (
@@ -529,7 +547,7 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                         <Plus size={18} className="text-orange-500" />
                         Add manually
                       </span>
-                      {showManualAdd ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      <ChevronDown size={16} className={`transition-transform ${showManualAdd ? "rotate-180" : ""}`} />
                     </Button>
 
                     {showManualAdd && (

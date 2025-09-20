@@ -446,7 +446,7 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
   return (
     <div className="space-y-4">
       <Card className="p-4 bg-white border-zinc-200">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
           <div className="flex items-center gap-6">
             {/* Progress indicator */}
             <div className="flex items-center gap-3">
@@ -498,9 +498,9 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 ">
             {(status === 'completed' || status === 'cancelled' || (status === 'processing' && results.size > 0)) && (
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col md:flex-row gap-3">
                 {(() => {
                   const skippedCount = Array.from(results.values()).filter(r => r.status === 'skipped').length;
                   if (skippedCount > 0) {
@@ -1076,7 +1076,7 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
               onClick={() => setShowSkipped(!showSkipped)}
               className="w-full flex items-center justify-between text-left"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-start sm:items-center gap-2 flex-col sm:flex-row">
                 <Badge variant="secondary" className="bg-gray-200 text-gray-700">
                   {skippedResults.length} Skipped
                 </Badge>
