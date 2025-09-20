@@ -17,6 +17,9 @@ export default {
     },
     extend: {
       colors: {
+        graphite: "#262626",
+        heat: "#FA5D19",
+        paper: "#F9F9F9",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -63,4 +66,4 @@ export default {
     },
   },
   plugins: [require("tailwindcss-animate")],
-} satisfies Config; 
+} satisfies Config;
