@@ -18,8 +18,8 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        code: " rounded-[10px] text-sm font-medium items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-zinc-100 hover:bg-zinc-200 disabled:bg-[#8c8885] active:scale-95 disabled:hover:bg-[#8c8885] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100",
-        orange: "h-9 px-4 rounded-[10px] text-sm font-medium items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-orange-500 bg-orange-600 text-white dark:text-white active:scale-95 disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100",
+        code: " rounded-[10px] text-sm font-medium items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-paper hover:bg-zinc-200 disabled:bg-[#8c8885] active:scale-95 disabled:hover:bg-[#8c8885] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100",
+        orange: "h-9 px-4 rounded-[10px] text-sm font-medium items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-orange-500 bg-heat text-white dark:text-white active:scale-95 disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100",
       },
       size: {
         default: "h-10 px-4 py-2",

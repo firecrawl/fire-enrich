@@ -140,7 +140,7 @@ export function CSVUploader({ onUpload }: CSVUploaderProps) {
             </div>
           ) : (
             <>
-              <p className="text-lg font-medium text-[#36322F] mb-1">
+              <p className="text-lg font-medium text-graphite mb-1">
                 Drag & drop your CSV file here
               </p>
               <p className="text-sm text-muted-foreground mb-4">
@@ -187,29 +187,29 @@ export function CSVUploader({ onUpload }: CSVUploaderProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
               </svg>
             </div>
-            <h3 className="text-sm font-medium text-[#36322F]">Download Sample</h3>
+            <h3 className="text-sm font-medium text-graphite">Download Sample</h3>
           </div>
           <p className="text-xs text-muted-foreground">Try our sample CSV file</p>
         </a>
 
         <div className="p-3 bg-zinc-100 rounded-lg border border-zinc-200">
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-6 h-6 bg-[#36322F] rounded flex items-center justify-center dark:bg-zinc-700">
+            <div className="w-6 h-6 bg-graphite rounded flex items-center justify-center dark:bg-zinc-700">
               <span className="text-white text-xs font-bold">@</span>
             </div>
-            <h3 className="text-sm font-medium text-[#36322F]">Email Required</h3>
+            <h3 className="text-sm font-medium text-graphite">Email Required</h3>
           </div>
           <p className="text-xs text-muted-foreground">Must contain email addresses</p>
         </div>
 
         <div className="p-3 bg-zinc-100 rounded-lg border border-zinc-200">
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-6 h-6 bg-[#36322F] rounded flex items-center justify-center dark:bg-zinc-700">
+            <div className="w-6 h-6 bg-graphite rounded flex items-center justify-center dark:bg-zinc-700">
               <span className="text-white text-xs font-bold">
                 {FIRE_ENRICH_CONFIG.FEATURES.IS_UNLIMITED ? '∞' : FIRE_ENRICH_CONFIG.CSV_LIMITS.MAX_ROWS}
               </span>
             </div>
-            <h3 className="text-sm font-medium text-[#36322F] ">
+            <h3 className="text-sm font-medium text-graphite ">
               {FIRE_ENRICH_CONFIG.FEATURES.IS_UNLIMITED ? 'Unlimited Mode' : 'Row Limit'}
             </h3>
           </div>

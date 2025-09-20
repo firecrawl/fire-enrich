@@ -228,7 +228,7 @@ export default function HomePage() {
 
       <div className="text-center pt-8 pb-6">
         <h1 className="text-[2.5rem] lg:text-[3.8rem] text-[#36322F] dark:text-white font-semibold tracking-tight leading-[0.9] opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:200ms] [animation-fill-mode:forwards]">
-          <span className="relative px-1 text-transparent tracking-tighter bg-clip-text bg-[#FF4D00] inline-flex justify-center items-center">
+          <span className="relative px-1 text-transparent tracking-tighter bg-clip-text bg-heat inline-flex justify-center items-center">
             Fire Enrich
           </span>
           <span className="block text-black tracking-tighter leading-[1.1] opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:400ms] [animation-fill-mode:forwards]">
@@ -250,7 +250,7 @@ export default function HomePage() {
           <p className="text-sm text-muted-foreground">Initializing...</p>
         </div>
       ) : (
-        <div className="bg-[#FBFAF9] p-4 sm:p-6 rounded-lg shadow-sm">
+        <div className="bg-paper p-4 sm:p-6 rounded-lg shadow-sm">
           {step === 'setup' && (
             <Button
               variant="code"
