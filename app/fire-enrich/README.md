@@ -267,6 +267,6 @@ If you prefer not to use environment variables, Fire Enrich supports entering AP
 
 For issues or questions:
 - Use this template: [https://github.com/mendableai/fire-enrich](https://github.com/mendableai/fire-enrich)
-- Check the [GitHub Issues](https://github.com/your-repo/issues)
+- Check the [GitHub Issues](https://github.com/mendableai/fire-enrich/issues)
 - Review error messages and logs
 - Ensure API keys have sufficient credits
