@@ -790,7 +790,7 @@ ${schemaDescription}
         ],
         response_format: { type: 'json_object' },
         temperature: 0.3,
-        max_tokens: 2000,
+        max_completion_tokens: 2000,
       });
       
       const content = response.choices[0].message.content;
@@ -906,7 +906,7 @@ Return ONLY the search query, nothing else.`
         model: 'gpt-5-mini',
         messages,
         temperature: 0.3,
-        max_tokens: 100,
+        max_completion_tokens: 100,
       });
 
       return response.choices[0].message.content?.trim() || question;
@@ -978,7 +978,7 @@ Question: ${question}
         model: 'gpt-5-mini',
         messages,
         temperature: 0.1, // Lower temperature for more consistent behavior
-        max_tokens: 500,
+        max_completion_tokens: 500,
       });
 
       const answer = response.choices[0].message.content?.trim() || '';
@@ -1021,7 +1021,7 @@ Question: ${question}
           }
         ],
         temperature: 0.3,
-        max_tokens: 50,
+        max_completion_tokens: 50,
       });
 
       const result = JSON.parse(response.choices[0].message.content || '{"index": 0}');
@@ -1071,7 +1071,7 @@ Be concise but informative. If the content doesn't contain the answer, say so. W
         model: 'gpt-5',
         messages,
         temperature: 0.7,
-        max_tokens: 500,
+        max_completion_tokens: 500,
       });
 
       return response.choices[0].message.content?.trim() || "I couldn't find a clear answer to your question.";
