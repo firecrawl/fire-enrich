@@ -3,9 +3,10 @@ import { OpenAIService } from '../services/openai';
 import { parseEmail, generateSearchQueriesFromEmail } from './email-parser';
 import { findRelevantSnippet } from '../utils/source-context';
 import type { CSVRow, EnrichmentField, EnrichmentResult, SearchResult } from '../types';
+import type { FirecrawlClientConfig } from '../config/firecrawl';
 
 export interface EnrichmentStrategyOptions {
-  firecrawlApiKey: string;
+  firecrawl: FirecrawlClientConfig;
   openaiApiKey: string;
 }
 
@@ -14,7 +15,7 @@ export class EnrichmentStrategy {
   private openai: OpenAIService;
 
   constructor(options: EnrichmentStrategyOptions) {
-    this.firecrawl = new FirecrawlService(options.firecrawlApiKey);
+    this.firecrawl = new FirecrawlService(options.firecrawl);
     this.openai = new OpenAIService(options.openaiApiKey);
   }
 

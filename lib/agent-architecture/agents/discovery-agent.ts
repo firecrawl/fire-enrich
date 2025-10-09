@@ -2,6 +2,7 @@ import { Agent, Tool } from '@openai/agents';
 import { z } from 'zod';
 import { createWebsiteScraperTool } from '../tools/website-scraper-tool';
 import { createSmartSearchTool } from '../tools/smart-search-tool';
+import type { FirecrawlClientConfig } from '../../config/firecrawl';
 
 const DiscoveryResult = z.object({
   companyName: z.string().describe('Official company name'),
@@ -12,7 +13,7 @@ const DiscoveryResult = z.object({
   sources: z.record(z.string(), z.array(z.string())).describe('Source URLs for each field'),
 });
 
-export function createDiscoveryAgent(firecrawlApiKey: string) {
+export function createDiscoveryAgent(firecrawlConfig: FirecrawlClientConfig) {
   console.log('[AGENT-DISCOVERY] Creating Discovery Agent');
   
   return new Agent({
@@ -60,8 +61,8 @@ export function createDiscoveryAgent(firecrawlApiKey: string) {
     IMPORTANT: Never return empty results. Always provide at least domain-based inferences.`,
     
     tools: [
-      createWebsiteScraperTool(firecrawlApiKey) as unknown as Tool<unknown>,
-      createSmartSearchTool(firecrawlApiKey, 'discovery') as unknown as Tool<unknown>,
+      createWebsiteScraperTool(firecrawlConfig) as unknown as Tool<unknown>,
+      createSmartSearchTool(firecrawlConfig, 'discovery') as unknown as Tool<unknown>,
     ],
     
     outputType: DiscoveryResult,

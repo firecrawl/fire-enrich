@@ -1,11 +1,15 @@
 import FirecrawlApp from '@mendable/firecrawl-js';
+import type { FirecrawlClientConfig } from '../config/firecrawl';
 import type { SearchResult } from '../types';
 
 export class FirecrawlService {
   private app: FirecrawlApp;
 
-  constructor(apiKey: string) {
-    this.app = new FirecrawlApp({ apiKey });
+  constructor(config: FirecrawlClientConfig) {
+    this.app = new FirecrawlApp({
+      apiKey: config.apiKey ?? undefined,
+      apiUrl: config.apiUrl,
+    });
   }
 
   async search(

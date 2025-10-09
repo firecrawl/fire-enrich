@@ -1,12 +1,13 @@
 import { AgentOrchestrator } from './orchestrator';
+import type { FirecrawlClientConfig } from '../config/firecrawl';
 
 export { AgentOrchestrator } from './orchestrator';
 export * from './core/types';
 
 // Factory function for easy initialization
 export function createAgentOrchestrator(
-  firecrawlApiKey: string,
+  firecrawlConfig: FirecrawlClientConfig,
   openaiApiKey: string
 ) {
-  return new AgentOrchestrator(firecrawlApiKey, openaiApiKey);
+  return new AgentOrchestrator(firecrawlConfig, openaiApiKey);
 }

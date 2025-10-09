@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import FirecrawlApp from '@mendable/firecrawl-js';
+import type { FirecrawlClientConfig } from '../../config/firecrawl';
 
 interface ScrapeResult {
   success: boolean;
@@ -8,8 +9,11 @@ interface ScrapeResult {
   metadata?: Record<string, unknown>;
 }
 
-export function createWebsiteScraperTool(firecrawlApiKey: string, onProgress?: (message: string, type: 'info' | 'success' | 'warning' | 'agent') => void) {
-  const firecrawl = new FirecrawlApp({ apiKey: firecrawlApiKey });
+export function createWebsiteScraperTool(firecrawlConfig: FirecrawlClientConfig, onProgress?: (message: string, type: 'info' | 'success' | 'warning' | 'agent') => void) {
+  const firecrawl = new FirecrawlApp({
+    apiKey: firecrawlConfig.apiKey ?? undefined,
+    apiUrl: firecrawlConfig.apiUrl,
+  });
   
   return {
     name: 'scrape_website',

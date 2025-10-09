@@ -32,6 +32,18 @@ export default function CSVEnrichmentPage() {
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [firecrawlApiKey, setFirecrawlApiKey] = useState<string>("");
   const [openaiApiKey, setOpenaiApiKey] = useState<string>("");
+  const [firecrawlApiUrl, setFirecrawlApiUrl] = useState<string>("https://api.firecrawl.dev");
+  const [firecrawlEnv, setFirecrawlEnv] = useState<{
+    mode: "saas" | "self_hosted";
+    requiresApiKey: boolean;
+    hasEnvApiKey: boolean;
+    hasEnvApiUrl: boolean;
+  }>({
+    mode: "saas",
+    requiresApiKey: true,
+    hasEnvApiKey: false,
+    hasEnvApiUrl: false,
+  });
   const [isValidatingApiKey, setIsValidatingApiKey] = useState(false);
   const [missingKeys, setMissingKeys] = useState<{
     firecrawl: boolean;
@@ -51,23 +63,56 @@ export default function CSVEnrichmentPage() {
           throw new Error("Failed to check environment");
         }
         const data = await response.json();
-        const hasFirecrawl = data.environmentStatus.FIRECRAWL_API_KEY;
-        const hasOpenAI = data.environmentStatus.OPENAI_API_KEY;
+        const envStatus = data.environmentStatus ?? {};
+        const envMode =
+          envStatus.FIRECRAWL_MODE === "self_hosted" ? "self_hosted" : "saas";
+        const requiresApiKey =
+          typeof envStatus.FIRECRAWL_REQUIRES_API_KEY === "boolean"
+            ? envStatus.FIRECRAWL_REQUIRES_API_KEY
+            : envMode !== "self_hosted";
+        const envApiUrl =
+          typeof envStatus.FIRECRAWL_API_URL === "string" &&
+          envStatus.FIRECRAWL_API_URL.length > 0
+            ? envStatus.FIRECRAWL_API_URL
+            : "";
 
-        if (!hasFirecrawl) {
-          // Check localStorage for saved API key
-          const savedKey = localStorage.getItem("firecrawl_api_key");
-          if (savedKey) {
-            setFirecrawlApiKey(savedKey);
+        setFirecrawlEnv({
+          mode: envMode,
+          requiresApiKey,
+          hasEnvApiKey: !!envStatus.FIRECRAWL_API_KEY,
+          hasEnvApiUrl: envApiUrl.length > 0,
+        });
+
+        const savedFirecrawlUrl =
+          typeof window !== "undefined"
+            ? localStorage.getItem("firecrawl_api_url")
+            : null;
+        const initialFirecrawlUrl =
+          savedFirecrawlUrl && savedFirecrawlUrl.trim().length > 0
+            ? savedFirecrawlUrl
+            : envApiUrl || "https://api.firecrawl.dev";
+        setFirecrawlApiUrl(initialFirecrawlUrl);
+
+        if (!envStatus.FIRECRAWL_API_KEY) {
+          if (typeof window !== "undefined") {
+            const savedKey = localStorage.getItem("firecrawl_api_key");
+            if (savedKey) {
+              setFirecrawlApiKey(savedKey);
+            }
           }
+        } else {
+          setFirecrawlApiKey("");
         }
 
-        if (!hasOpenAI) {
-          // Check localStorage for saved API key
-          const savedKey = localStorage.getItem("openai_api_key");
-          if (savedKey) {
-            setOpenaiApiKey(savedKey);
+        if (!envStatus.OPENAI_API_KEY) {
+          if (typeof window !== "undefined") {
+            const savedOpenAI = localStorage.getItem("openai_api_key");
+            if (savedOpenAI) {
+              setOpenaiApiKey(savedOpenAI);
+            }
           }
+        } else {
+          setOpenaiApiKey("");
         }
       } catch (error) {
         console.error("Error checking environment:", error);
@@ -83,20 +128,56 @@ export default function CSVEnrichmentPage() {
     // Check if we have Firecrawl API key
     const response = await fetch("/api/check-env");
     const data = await response.json();
-    const hasFirecrawl = data.environmentStatus.FIRECRAWL_API_KEY;
-    const hasOpenAI = data.environmentStatus.OPENAI_API_KEY;
-    const savedFirecrawlKey = localStorage.getItem("firecrawl_api_key");
-    const savedOpenAIKey = localStorage.getItem("openai_api_key");
+    const envStatus = data.environmentStatus ?? {};
+    const envMode =
+      envStatus.FIRECRAWL_MODE === "self_hosted" ? "self_hosted" : "saas";
+    const requiresFirecrawlKey =
+      typeof envStatus.FIRECRAWL_REQUIRES_API_KEY === "boolean"
+        ? envStatus.FIRECRAWL_REQUIRES_API_KEY
+        : envMode !== "self_hosted";
+    const envApiUrl =
+      typeof envStatus.FIRECRAWL_API_URL === "string" &&
+      envStatus.FIRECRAWL_API_URL.length > 0
+        ? envStatus.FIRECRAWL_API_URL
+        : "";
+    const hasFirecrawl = !!envStatus.FIRECRAWL_API_KEY;
+    const hasOpenAI = !!envStatus.OPENAI_API_KEY;
+    const savedFirecrawlKey =
+      typeof window !== "undefined"
+        ? localStorage.getItem("firecrawl_api_key")
+        : null;
+    const savedOpenAIKey =
+      typeof window !== "undefined"
+        ? localStorage.getItem("openai_api_key")
+        : null;
+    const needsFirecrawlKey =
+      requiresFirecrawlKey && !hasFirecrawl && !savedFirecrawlKey;
+    const needsOpenAI = !hasOpenAI && !savedOpenAIKey;
 
-    if (
-      (!hasFirecrawl && !savedFirecrawlKey) ||
-      (!hasOpenAI && !savedOpenAIKey)
-    ) {
+    setFirecrawlEnv({
+      mode: envMode,
+      requiresApiKey: requiresFirecrawlKey,
+      hasEnvApiKey: hasFirecrawl,
+      hasEnvApiUrl: envApiUrl.length > 0,
+    });
+
+    if (typeof window !== "undefined") {
+      const savedUrl = localStorage.getItem("firecrawl_api_url");
+      const updatedUrl =
+        savedUrl && savedUrl.trim().length > 0
+          ? savedUrl
+          : envApiUrl || firecrawlApiUrl;
+      setFirecrawlApiUrl(updatedUrl);
+    } else if (envApiUrl) {
+      setFirecrawlApiUrl(envApiUrl);
+    }
+
+    if (needsFirecrawlKey || needsOpenAI) {
       // Save the CSV data temporarily and show API key modal
       setPendingCSVData({ rows, columns });
       setMissingKeys({
-        firecrawl: !hasFirecrawl && !savedFirecrawlKey,
-        openai: !hasOpenAI && !savedOpenAIKey,
+        firecrawl: needsFirecrawlKey,
+        openai: needsOpenAI,
       });
       setShowApiKeyModal(true);
     } else {
@@ -131,18 +212,44 @@ export default function CSVEnrichmentPage() {
   };
 
   const handleApiKeySubmit = async () => {
-    // Check environment again to see what's missing
     const response = await fetch("/api/check-env");
     const data = await response.json();
-    const hasEnvFirecrawl = data.environmentStatus.FIRECRAWL_API_KEY;
-    const hasEnvOpenAI = data.environmentStatus.OPENAI_API_KEY;
+    const envStatus = data.environmentStatus ?? {};
+    const envMode =
+      envStatus.FIRECRAWL_MODE === "self_hosted" ? "self_hosted" : "saas";
+    const requiresFirecrawlKey =
+      typeof envStatus.FIRECRAWL_REQUIRES_API_KEY === "boolean"
+        ? envStatus.FIRECRAWL_REQUIRES_API_KEY
+        : envMode !== "self_hosted";
+    const envApiUrl =
+      typeof envStatus.FIRECRAWL_API_URL === "string" &&
+      envStatus.FIRECRAWL_API_URL.length > 0
+        ? envStatus.FIRECRAWL_API_URL
+        : "";
+    const hasEnvFirecrawl = !!envStatus.FIRECRAWL_API_KEY;
+    const hasEnvOpenAI = !!envStatus.OPENAI_API_KEY;
     const hasSavedFirecrawl = localStorage.getItem("firecrawl_api_key");
     const hasSavedOpenAI = localStorage.getItem("openai_api_key");
 
-    const needsFirecrawl = !hasEnvFirecrawl && !hasSavedFirecrawl;
+    const needsFirecrawlKey =
+      requiresFirecrawlKey && !hasEnvFirecrawl && !hasSavedFirecrawl;
     const needsOpenAI = !hasEnvOpenAI && !hasSavedOpenAI;
 
-    if (needsFirecrawl && !firecrawlApiKey.trim()) {
+    setFirecrawlEnv({
+      mode: envMode,
+      requiresApiKey: requiresFirecrawlKey,
+      hasEnvApiKey: hasEnvFirecrawl,
+      hasEnvApiUrl: envApiUrl.length > 0,
+    });
+
+    const normalizedUrlRaw =
+      firecrawlApiUrl.trim() || envApiUrl || "https://api.firecrawl.dev";
+    const normalizedUrl = normalizedUrlRaw
+      .replace(/\s+$/g, "")
+      .replace(/\/+$/, "");
+    setFirecrawlApiUrl(normalizedUrl);
+
+    if (needsFirecrawlKey && !firecrawlApiKey.trim()) {
       toast.error("Please enter a valid Firecrawl API key");
       return;
     }
@@ -155,46 +262,65 @@ export default function CSVEnrichmentPage() {
     setIsValidatingApiKey(true);
 
     try {
-      // Test the Firecrawl API key if provided
-      if (firecrawlApiKey) {
-        const response = await fetch("/api/scrape", {
+      if (firecrawlApiKey.trim()) {
+        const validationResponse = await fetch("/api/scrape", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "X-Firecrawl-API-Key": firecrawlApiKey,
+            "X-Firecrawl-API-Url": normalizedUrl,
           },
           body: JSON.stringify({ url: "https://example.com" }),
         });
 
-        if (!response.ok) {
+        if (!validationResponse.ok) {
           throw new Error("Invalid Firecrawl API key");
         }
 
-        // Save the API key to localStorage
         localStorage.setItem("firecrawl_api_key", firecrawlApiKey);
+      } else {
+        localStorage.removeItem("firecrawl_api_key");
       }
 
-      // Save OpenAI API key if provided
-      if (openaiApiKey) {
+      if (normalizedUrl) {
+        localStorage.setItem("firecrawl_api_url", normalizedUrl);
+      }
+
+      if (openaiApiKey.trim()) {
         localStorage.setItem("openai_api_key", openaiApiKey);
+      } else {
+        localStorage.removeItem("openai_api_key");
       }
 
-      toast.success("API keys saved successfully!");
+      toast.success("Firecrawl connection saved successfully!");
       setShowApiKeyModal(false);
 
-      // Process the pending CSV data
       if (pendingCSVData) {
         setCsvData(pendingCSVData);
         setStep("setup");
         setPendingCSVData(null);
       }
     } catch (error) {
-      toast.error("Invalid API key. Please check and try again.");
+      toast.error(
+        "Could not validate Firecrawl settings. Please check and try again."
+      );
       console.error("API key validation error:", error);
     } finally {
       setIsValidatingApiKey(false);
     }
   };
+
+  const requiresFirecrawlKeyInput =
+    missingKeys.firecrawl && firecrawlEnv.requiresApiKey;
+  const requiresOpenAIKeyInput = missingKeys.openai;
+  const shouldShowFirecrawlSettings =
+    missingKeys.firecrawl ||
+    firecrawlEnv.mode === "self_hosted" ||
+    (!firecrawlEnv.hasEnvApiUrl && !firecrawlEnv.hasEnvApiKey);
+  const isSubmitDisabled =
+    isValidatingApiKey ||
+    (requiresFirecrawlKeyInput && !firecrawlApiKey.trim()) ||
+    (requiresOpenAIKeyInput && !openaiApiKey.trim());
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-4 max-w-7xl mx-auto font-inter">
@@ -334,34 +460,65 @@ export default function CSVEnrichmentPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-4">
-            {missingKeys.firecrawl && (
-              <>
-                <Button
-                  onClick={openFirecrawlWebsite}
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Get Firecrawl API Key
-                </Button>
+            {shouldShowFirecrawlSettings && (
+              <div className="flex flex-col gap-3 rounded-lg border border-zinc-200/70 dark:border-zinc-800/70 p-4">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-semibold">Firecrawl connection</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Point to the managed Firecrawl API or your self-hosted
+                    deployment.
+                  </p>
+                </div>
                 <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="firecrawl-key"
-                    className="text-sm font-medium"
-                  >
-                    Firecrawl API Key
+                  <label htmlFor="firecrawl-url" className="text-sm font-medium">
+                    Firecrawl Base URL
                   </label>
                   <Input
-                    id="firecrawl-key"
-                    type="password"
-                    placeholder="fc-..."
-                    value={firecrawlApiKey}
-                    onChange={(e) => setFirecrawlApiKey(e.target.value)}
+                    id="firecrawl-url"
+                    type="text"
+                    placeholder="https://api.firecrawl.dev"
+                    value={firecrawlApiUrl}
+                    onChange={(e) => setFirecrawlApiUrl(e.target.value)}
                     disabled={isValidatingApiKey}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Example self-hosted URL: http://localhost:3002
+                  </p>
                 </div>
-              </>
+                {requiresFirecrawlKeyInput ? (
+                  <>
+                    <Button
+                      onClick={openFirecrawlWebsite}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Get Firecrawl API Key
+                    </Button>
+                    <div className="flex flex-col gap-2">
+                      <label
+                        htmlFor="firecrawl-key"
+                        className="text-sm font-medium"
+                      >
+                        Firecrawl API Key
+                      </label>
+                      <Input
+                        id="firecrawl-key"
+                        type="password"
+                        placeholder="fc-..."
+                        value={firecrawlApiKey}
+                        onChange={(e) => setFirecrawlApiKey(e.target.value)}
+                        disabled={isValidatingApiKey}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    API key optional when self-hosting.
+                  </p>
+                )}
+              </div>
             )}
 
             {missingKeys.openai && (
@@ -411,7 +568,7 @@ export default function CSVEnrichmentPage() {
             </Button>
             <Button
               onClick={handleApiKeySubmit}
-              disabled={isValidatingApiKey || !firecrawlApiKey.trim()}
+              disabled={isSubmitDisabled}
               variant="code"
             >
               {isValidatingApiKey ? (
@@ -420,7 +577,7 @@ export default function CSVEnrichmentPage() {
                   Validating...
                 </>
               ) : (
-                "Submit"
+                "Save settings"
               )}
             </Button>
           </DialogFooter>

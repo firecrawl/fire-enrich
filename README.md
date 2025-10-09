@@ -29,11 +29,20 @@ Turn a simple list of emails into a rich dataset with company profiles, funding 
 2. Create a `.env.local` file with your API keys:
    ```
    FIRECRAWL_API_KEY=your_firecrawl_key
+   # Optional: point to a self-hosted Firecrawl deployment
+   # FIRECRAWL_API_URL=http://localhost:3002
+   # FIRECRAWL_SELF_HOSTED_API_KEY=optional_self_hosted_key
    OPENAI_API_KEY=your_openai_key
    ```
 3. Install dependencies: `npm install` or `yarn install`
 4. Run the development server: `npm run dev` or `yarn dev`
 5. Open [http://localhost:3000](http://localhost:3000)
+
+### Firecrawl Configuration
+
+- **Managed service (default):** No extra configuration needed; requests go to `https://api.firecrawl.dev`.
+- **Self-hosted:** Set `FIRECRAWL_API_URL` (or `FIRECRAWL_BASE_URL`) to your server URL. If your instance requires authentication, provide `FIRECRAWL_SELF_HOSTED_API_KEY` (or reuse `FIRECRAWL_API_KEY`).
+- You can still override the API key and base URL from the UI modal when environment variables are not provided.
 
 ## Example Enrichment
 
