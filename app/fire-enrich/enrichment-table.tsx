@@ -117,6 +117,7 @@ export function EnrichmentTable({
     try {
       // Get API keys from localStorage if not in environment
       const firecrawlApiKey = localStorage.getItem("firecrawl_api_key");
+      const firecrawlApiUrl = localStorage.getItem("firecrawl_api_url");
       const openaiApiKey = localStorage.getItem("openai_api_key");
 
       const headers: Record<string, string> = {
@@ -127,6 +128,9 @@ export function EnrichmentTable({
       // Add API keys to headers if available
       if (firecrawlApiKey) {
         headers["X-Firecrawl-API-Key"] = firecrawlApiKey;
+      }
+      if (firecrawlApiUrl) {
+        headers["X-Firecrawl-API-Url"] = firecrawlApiUrl;
       }
       if (openaiApiKey) {
         headers["X-OpenAI-API-Key"] = openaiApiKey;
@@ -553,6 +557,7 @@ export function EnrichmentTable({
 
     try {
       const firecrawlApiKey = localStorage.getItem("firecrawl_api_key");
+      const firecrawlApiUrl = localStorage.getItem("firecrawl_api_url");
       const openaiApiKey = localStorage.getItem("openai_api_key");
 
       const headers: Record<string, string> = {
@@ -560,6 +565,7 @@ export function EnrichmentTable({
       };
 
       if (firecrawlApiKey) headers["X-Firecrawl-API-Key"] = firecrawlApiKey;
+      if (firecrawlApiUrl) headers["X-Firecrawl-API-Url"] = firecrawlApiUrl;
       if (openaiApiKey) headers["X-OpenAI-API-Key"] = openaiApiKey;
 
       // Get conversation history (last 10 messages)

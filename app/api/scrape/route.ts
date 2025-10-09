@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import FirecrawlApp from '@mendable/firecrawl-js';
 import { isRateLimited } from '@/lib/rate-limit';
+import { resolveFirecrawlConfig } from '@/lib/config/firecrawl';
 
 interface ScrapeRequestBody {
   url?: string;
@@ -34,23 +35,26 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  let apiKey = process.env.FIRECRAWL_API_KEY;
-  
-  if (!apiKey) {
-    const headerApiKey = request.headers.get('X-Firecrawl-API-Key');
-    
-    if (!headerApiKey) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'API configuration error. Please try again later or contact support.' 
-      }, { status: 500 });
-    }
-    
-    apiKey = headerApiKey;
+  const firecrawlApiKeyHeader = request.headers.get('X-Firecrawl-API-Key');
+  const firecrawlApiUrlHeader = request.headers.get('X-Firecrawl-API-Url') || request.headers.get('X-Firecrawl-Base-Url');
+
+  const firecrawlConfig = resolveFirecrawlConfig({
+    ...(firecrawlApiKeyHeader ? { apiKey: firecrawlApiKeyHeader } : {}),
+    ...(firecrawlApiUrlHeader ? { apiUrl: firecrawlApiUrlHeader } : {}),
+  });
+
+  if (firecrawlConfig.requiresApiKey && !firecrawlConfig.apiKey) {
+    return NextResponse.json({ 
+      success: false, 
+      error: 'API configuration error. Please provide a Firecrawl API key.' 
+    }, { status: 500 });
   }
 
   try {
-    const app = new FirecrawlApp({ apiKey });
+    const app = new FirecrawlApp({
+      apiKey: firecrawlConfig.apiKey ?? undefined,
+      apiUrl: firecrawlConfig.apiUrl,
+    });
     const body = await request.json() as ScrapeRequestBody;
     const { url, urls, ...params } = body;
 

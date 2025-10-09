@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FirecrawlService } from '@/lib/services/firecrawl';
 import { OpenAIService } from '@/lib/services/openai';
+import { resolveFirecrawlConfig } from '@/lib/config/firecrawl';
 
 export const runtime = 'nodejs';
 
@@ -20,11 +21,24 @@ export async function POST(request: NextRequest) {
 
     // Get API keys
     const openaiApiKey = process.env.OPENAI_API_KEY || request.headers.get('X-OpenAI-API-Key');
-    const firecrawlApiKey = process.env.FIRECRAWL_API_KEY || request.headers.get('X-Firecrawl-API-Key');
+    const firecrawlApiKeyHeader = request.headers.get('X-Firecrawl-API-Key');
+    const firecrawlApiUrlHeader = request.headers.get('X-Firecrawl-API-Url') || request.headers.get('X-Firecrawl-Base-Url');
 
-    if (!openaiApiKey || !firecrawlApiKey) {
+    const firecrawlConfig = resolveFirecrawlConfig({
+      ...(firecrawlApiKeyHeader ? { apiKey: firecrawlApiKeyHeader } : {}),
+      ...(firecrawlApiUrlHeader ? { apiUrl: firecrawlApiUrlHeader } : {}),
+    });
+
+    if (!openaiApiKey) {
       return NextResponse.json(
-        { error: 'Missing API keys' },
+        { error: 'Missing OpenAI API key' },
+        { status: 500 }
+      );
+    }
+
+    if (firecrawlConfig.requiresApiKey && !firecrawlConfig.apiKey) {
+      return NextResponse.json(
+        { error: 'Missing Firecrawl API key' },
         { status: 500 }
       );
     }
@@ -34,7 +48,7 @@ export async function POST(request: NextRequest) {
     const queryId = sessionId || `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     activeQueries.set(queryId, abortController);
 
-    const firecrawl = new FirecrawlService(firecrawlApiKey);
+    const firecrawl = new FirecrawlService(firecrawlConfig);
     const openai = new OpenAIService(openaiApiKey);
 
     // Create streaming response

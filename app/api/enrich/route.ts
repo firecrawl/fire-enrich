@@ -3,6 +3,7 @@ import { AgentEnrichmentStrategy } from '@/lib/strategies/agent-enrichment-strat
 import type { EnrichmentRequest, RowEnrichmentResult } from '@/lib/types';
 import { loadSkipList, shouldSkipEmail, getSkipReason } from '@/lib/utils/skip-list';
 import { ENRICHMENT_CONFIG } from '@/lib/config/enrichment';
+import { resolveFirecrawlConfig } from '@/lib/config/firecrawl';
 
 // Use Node.js runtime for better compatibility
 export const runtime = 'nodejs';
@@ -50,17 +51,29 @@ export async function POST(request: NextRequest) {
     const abortController = new AbortController();
     activeSessions.set(sessionId, abortController);
 
-    // Check environment variables and headers for API keys
     const openaiApiKey = process.env.OPENAI_API_KEY || request.headers.get('X-OpenAI-API-Key');
-    const firecrawlApiKey = process.env.FIRECRAWL_API_KEY || request.headers.get('X-Firecrawl-API-Key');
-    
-    if (!openaiApiKey || !firecrawlApiKey) {
-      console.error('Missing API keys:', { 
-        hasOpenAI: !!openaiApiKey, 
-        hasFirecrawl: !!firecrawlApiKey 
+    const firecrawlApiKeyHeader = request.headers.get('X-Firecrawl-API-Key');
+    const firecrawlApiUrlHeader = request.headers.get('X-Firecrawl-API-Url') || request.headers.get('X-Firecrawl-Base-Url');
+
+    const firecrawlConfig = resolveFirecrawlConfig({
+      ...(firecrawlApiKeyHeader ? { apiKey: firecrawlApiKeyHeader } : {}),
+      ...(firecrawlApiUrlHeader ? { apiUrl: firecrawlApiUrlHeader } : {}),
+    });
+
+    if (!openaiApiKey) {
+      console.error('Missing OpenAI API key');
+      return NextResponse.json(
+        { error: 'Server configuration error: Missing OpenAI API key' },
+        { status: 500 }
+      );
+    }
+
+    if (firecrawlConfig.requiresApiKey && !firecrawlConfig.apiKey) {
+      console.error('Missing Firecrawl API key for managed service', {
+        apiUrl: firecrawlConfig.apiUrl,
       });
       return NextResponse.json(
-        { error: 'Server configuration error: Missing API keys' },
+        { error: 'Server configuration error: Missing Firecrawl API key' },
         { status: 500 }
       );
     }
@@ -71,7 +84,7 @@ export async function POST(request: NextRequest) {
     console.log(`[STRATEGY] Using ${strategyName} - Advanced multi-agent architecture with specialized agents`);
     const enrichmentStrategy = new AgentEnrichmentStrategy(
       openaiApiKey,
-      firecrawlApiKey
+      firecrawlConfig
     );
 
     // Load skip list

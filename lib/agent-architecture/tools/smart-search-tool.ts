@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import FirecrawlApp from '@mendable/firecrawl-js';
+import type { FirecrawlClientConfig } from '../../config/firecrawl';
 
 export type SearchType = 'discovery' | 'business' | 'news' | 'technical' | 'metrics';
 
@@ -22,8 +23,11 @@ interface ProcessedResult extends SearchResult {
   domain: string;
 }
 
-export function createSmartSearchTool(firecrawlApiKey: string, searchType: SearchType, onProgress?: (message: string, type: 'info' | 'success' | 'warning' | 'agent') => void) {
-  const firecrawl = new FirecrawlApp({ apiKey: firecrawlApiKey });
+export function createSmartSearchTool(firecrawlConfig: FirecrawlClientConfig, searchType: SearchType, onProgress?: (message: string, type: 'info' | 'success' | 'warning' | 'agent') => void) {
+  const firecrawl = new FirecrawlApp({
+    apiKey: firecrawlConfig.apiKey ?? undefined,
+    apiUrl: firecrawlConfig.apiUrl,
+  });
   
   return {
     name: `search_${searchType}`,

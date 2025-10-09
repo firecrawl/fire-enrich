@@ -1,15 +1,16 @@
 import { AgentOrchestrator } from '../agent-architecture';
 import type { CSVRow, EnrichmentField, RowEnrichmentResult, EnrichmentResult } from '../types';
 import { shouldSkipEmail, loadSkipList, getSkipReason } from '../utils/skip-list';
+import type { FirecrawlClientConfig } from '../config/firecrawl';
 
 export class AgentEnrichmentStrategy {
   private orchestrator: AgentOrchestrator;
   
   constructor(
     openaiApiKey: string,
-    firecrawlApiKey: string,
+    firecrawlConfig: FirecrawlClientConfig,
   ) {
-    this.orchestrator = new AgentOrchestrator(firecrawlApiKey, openaiApiKey);
+    this.orchestrator = new AgentOrchestrator(firecrawlConfig, openaiApiKey);
   }
   
   async enrichRow(

@@ -1,6 +1,7 @@
 import { Agent, Tool } from '@openai/agents';
 import { z } from 'zod';
 import { createSmartSearchTool } from '../tools/smart-search-tool';
+import type { FirecrawlClientConfig } from '../../config/firecrawl';
 
 const FundingResult = z.object({
   fundingStage: z.enum([
@@ -17,7 +18,7 @@ const FundingResult = z.object({
   sources: z.record(z.string(), z.array(z.string())).describe('Source URLs for each field'),
 });
 
-export function createFundingAgent(firecrawlApiKey: string) {
+export function createFundingAgent(firecrawlConfig: FirecrawlClientConfig) {
   return new Agent({
     name: 'Funding Agent',
     
@@ -53,8 +54,8 @@ export function createFundingAgent(firecrawlApiKey: string) {
     IMPORTANT: Focus on recent and verified information. Old funding rounds are less relevant.`,
     
     tools: [
-      createSmartSearchTool(firecrawlApiKey, 'news') as unknown as Tool<unknown>,
-      createSmartSearchTool(firecrawlApiKey, 'business') as unknown as Tool<unknown>,
+      createSmartSearchTool(firecrawlConfig, 'news') as unknown as Tool<unknown>,
+      createSmartSearchTool(firecrawlConfig, 'business') as unknown as Tool<unknown>,
     ],
     
     outputType: FundingResult,

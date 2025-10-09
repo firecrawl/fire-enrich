@@ -2,6 +2,7 @@ import { Agent, tool } from '@openai/agents';
 import { z } from 'zod';
 import FirecrawlApp from '@mendable/firecrawl-js';
 import type { EnrichmentField } from '../types';
+import type { FirecrawlClientConfig } from '../config/firecrawl';
 
 // Specialized search tool that each agent will use
 const createSpecializedSearchTool = (firecrawl: FirecrawlApp) => tool({
@@ -307,9 +308,12 @@ export class SpecializedAgentService {
   private firecrawl: FirecrawlApp;
   private apiKey: string;
 
-  constructor(apiKey: string, firecrawlApiKey: string) {
+  constructor(apiKey: string, firecrawlConfig: FirecrawlClientConfig) {
     this.apiKey = apiKey;
-    this.firecrawl = new FirecrawlApp({ apiKey: firecrawlApiKey });
+    this.firecrawl = new FirecrawlApp({
+      apiKey: firecrawlConfig.apiKey ?? undefined,
+      apiUrl: firecrawlConfig.apiUrl,
+    });
   }
 
   async enrichWithSpecializedAgents(

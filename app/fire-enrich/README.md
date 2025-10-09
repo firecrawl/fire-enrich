@@ -114,6 +114,9 @@ pnpm install
 ```bash
 # Create .env.local file
 FIRECRAWL_API_KEY=your_firecrawl_key
+# Optional: point to a self-hosted Firecrawl deployment
+# FIRECRAWL_API_URL=http://localhost:3002
+# FIRECRAWL_SELF_HOSTED_API_KEY=optional_self_hosted_key
 OPENAI_API_KEY=your_openai_key
 ```
 
@@ -123,6 +126,12 @@ pnpm dev
 ```
 
 5. Open [http://localhost:3000/fire-enrich](http://localhost:3000/fire-enrich)
+
+### Firecrawl Deployment Options
+
+- **Managed service:** If `FIRECRAWL_API_URL` is not set the app targets `https://api.firecrawl.dev`.
+- **Self-hosted:** Set `FIRECRAWL_API_URL` (or `FIRECRAWL_BASE_URL`) to your server. Provide `FIRECRAWL_SELF_HOSTED_API_KEY` when your instance enforces authentication, otherwise leave it blank.
+- The UI allows overriding both the API key and base URL when environment variables are not present.
 
 ### Alternative: Browser-based API Keys
 

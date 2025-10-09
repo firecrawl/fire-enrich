@@ -2,6 +2,7 @@ import { Agent, Tool } from '@openai/agents';
 import { z } from 'zod';
 import { createWebsiteScraperTool } from '../tools/website-scraper-tool';
 import { createSmartSearchTool } from '../tools/smart-search-tool';
+import type { FirecrawlClientConfig } from '../../config/firecrawl';
 
 const MetricsResult = z.object({
   employeeCount: z.string().describe('Employee count or range (e.g., "50-100", "1000+")'),
@@ -12,7 +13,7 @@ const MetricsResult = z.object({
   sources: z.record(z.string(), z.array(z.string())).describe('Source URLs for each field'),
 });
 
-export function createMetricsAgent(firecrawlApiKey: string) {
+export function createMetricsAgent(firecrawlConfig: FirecrawlClientConfig) {
   return new Agent({
     name: 'Metrics Agent',
     
@@ -46,8 +47,8 @@ export function createMetricsAgent(firecrawlApiKey: string) {
     - Be transparent about estimates vs. confirmed data`,
     
     tools: [
-      createWebsiteScraperTool(firecrawlApiKey) as unknown as Tool<unknown>,
-      createSmartSearchTool(firecrawlApiKey, 'metrics') as unknown as Tool<unknown>,
+      createWebsiteScraperTool(firecrawlConfig) as unknown as Tool<unknown>,
+      createSmartSearchTool(firecrawlConfig, 'metrics') as unknown as Tool<unknown>,
     ],
     
     outputType: MetricsResult,

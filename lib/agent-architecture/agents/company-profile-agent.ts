@@ -2,6 +2,7 @@ import { Agent, Tool } from '@openai/agents';
 import { z } from 'zod';
 import { createWebsiteScraperTool } from '../tools/website-scraper-tool';
 import { createSmartSearchTool } from '../tools/smart-search-tool';
+import type { FirecrawlClientConfig } from '../../config/firecrawl';
 
 const ProfileResult = z.object({
   industry: z.string().describe('Primary industry or sector'),
@@ -12,7 +13,7 @@ const ProfileResult = z.object({
   sources: z.record(z.string(), z.array(z.string())).describe('Source URLs for each field'),
 });
 
-export function createCompanyProfileAgent(firecrawlApiKey: string) {
+export function createCompanyProfileAgent(firecrawlConfig: FirecrawlClientConfig) {
   console.log('[AGENT-PROFILE] Creating Company Profile Agent');
   
   return new Agent({
@@ -44,8 +45,8 @@ export function createCompanyProfileAgent(firecrawlApiKey: string) {
     IMPORTANT: Build on the Discovery Agent's findings. Don't re-discover basic info.`,
     
     tools: [
-      createWebsiteScraperTool(firecrawlApiKey) as unknown as Tool<unknown>,
-      createSmartSearchTool(firecrawlApiKey, 'business') as unknown as Tool<unknown>,
+      createWebsiteScraperTool(firecrawlConfig) as unknown as Tool<unknown>,
+      createSmartSearchTool(firecrawlConfig, 'business') as unknown as Tool<unknown>,
     ],
     
     outputType: ProfileResult,
