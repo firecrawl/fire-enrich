@@ -30,10 +30,78 @@ Turn a simple list of emails into a rich dataset with company profiles, funding 
    ```
    FIRECRAWL_API_KEY=your_firecrawl_key
    OPENAI_API_KEY=your_openai_key
+
+   # Optional: Use OpenAI-compatible endpoints (Azure OpenAI, local LLMs, etc.)
+   # OPENAI_BASE_URL=https://your-custom-endpoint.com/v1
    ```
 3. Install dependencies: `npm install` or `yarn install`
 4. Run the development server: `npm run dev` or `yarn dev`
 5. Open [http://localhost:3000](http://localhost:3000)
+
+### Using OpenAI-Compatible Endpoints
+
+Fire Enrich supports any OpenAI-compatible API endpoint, giving you flexibility to use different LLM providers:
+
+#### Supported Providers
+
+- **Azure OpenAI Service**: Enterprise-grade OpenAI models with Azure infrastructure
+- **Local LLM Servers**: Run models locally using tools like [LM Studio](https://lmstudio.ai/), [Ollama](https://ollama.ai/) (with OpenAI compatibility), or [vLLM](https://github.com/vllm-project/vllm)
+- **Alternative Providers**: Any service that implements the OpenAI API specification
+
+#### Configuration Methods
+
+**Method 1: Environment Variable** (Recommended for permanent setup)
+
+Add to your `.env.local` file:
+```env
+OPENAI_BASE_URL=https://your-custom-endpoint.com/v1
+```
+
+**Method 2: HTTP Header** (Useful for per-request overrides)
+
+When making API requests to Fire Enrich endpoints, include:
+```bash
+curl -X POST http://localhost:3000/api/enrich \
+  -H "X-OpenAI-Base-URL: https://your-custom-endpoint.com/v1" \
+  -H "X-OpenAI-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"rows": [...], "fields": [...]}'
+```
+
+#### Example Configurations
+
+**Azure OpenAI:**
+```env
+OPENAI_BASE_URL=https://your-resource-name.openai.azure.com/openai/deployments/your-deployment-name
+OPENAI_API_KEY=your-azure-api-key
+```
+
+**Local LM Studio:**
+```env
+OPENAI_BASE_URL=http://localhost:1234/v1
+OPENAI_API_KEY=lm-studio  # LM Studio doesn't require a real key
+```
+
+**Ollama (with OpenAI compatibility):**
+```env
+OPENAI_BASE_URL=http://localhost:11434/v1
+OPENAI_API_KEY=ollama  # Ollama doesn't require a real key
+```
+
+#### Notes
+
+- If `OPENAI_BASE_URL` is not set, Fire Enrich uses the default OpenAI endpoint
+- The base URL should include the `/v1` path if required by your provider
+- Ensure your custom endpoint is compatible with OpenAI's chat completions API
+- Fire Enrich uses `gpt-5` and `gpt-5-mini` model names - your endpoint must support these or map them to equivalent models
+
+#### Model Compatibility
+
+Fire Enrich is optimized for the following models:
+- **Primary**: `gpt-5` (used for main extraction, search queries, and response generation)
+- **Secondary**: `gpt-5-mini` (used for lighter tasks like field generation and source selection)
+
+If using a custom endpoint, ensure these model names are available or configure your endpoint to map them to equivalent models (e.g., `gpt-4o`, `gpt-4o-mini` for current OpenAI models, or local model names for self-hosted solutions).
 
 ## Example Enrichment
 
