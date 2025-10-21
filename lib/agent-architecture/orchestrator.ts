@@ -7,13 +7,14 @@ import { OpenAIService } from '../services/openai';
 export class AgentOrchestrator {
   private firecrawl: FirecrawlService;
   private openai: OpenAIService;
-  
+
   constructor(
     private firecrawlApiKey: string,
-    private openaiApiKey: string
+    private openaiApiKey: string,
+    private openaiBaseUrl?: string
   ) {
     this.firecrawl = new FirecrawlService(firecrawlApiKey);
-    this.openai = new OpenAIService(openaiApiKey);
+    this.openai = new OpenAIService(openaiApiKey, openaiBaseUrl);
   }
   
   async enrichRow(

@@ -22,8 +22,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const openaiBaseUrl = process.env.OPENAI_BASE_URL || request.headers.get('X-OpenAI-Base-URL') || undefined;
+
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
+      ...(openaiBaseUrl && { baseURL: openaiBaseUrl })
     });
 
     const completion = await openai.chat.completions.create({

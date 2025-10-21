@@ -6,8 +6,11 @@ import type { EnrichmentField, EnrichmentResult } from '../types';
 export class OpenAIService {
   private client: OpenAI;
 
-  constructor(apiKey: string) {
-    this.client = new OpenAI({ apiKey });
+  constructor(apiKey: string, baseURL?: string) {
+    this.client = new OpenAI({
+      apiKey,
+      ...(baseURL && { baseURL })
+    });
   }
 
   createEnrichmentSchema(fields: EnrichmentField[]) {

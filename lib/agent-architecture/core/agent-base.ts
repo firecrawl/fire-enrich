@@ -21,15 +21,19 @@ export interface HandoffConfig<T = unknown> {
 
 export abstract class BaseAgent<TInput = unknown, TOutput = unknown> {
   protected openai: OpenAI;
-  
+
   constructor(
     public name: string,
     public description: string,
     protected apiKey: string,
     public inputSchema?: z.ZodSchema<TInput>,
-    public outputSchema?: z.ZodSchema<TOutput>
+    public outputSchema?: z.ZodSchema<TOutput>,
+    protected baseURL?: string
   ) {
-    this.openai = new OpenAI({ apiKey });
+    this.openai = new OpenAI({
+      apiKey,
+      ...(baseURL && { baseURL })
+    });
   }
   
   abstract instructions(context: AgentContext<TInput>): string;
