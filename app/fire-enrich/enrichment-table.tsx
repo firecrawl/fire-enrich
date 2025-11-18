@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { CSVRow, EnrichmentField, RowEnrichmentResult } from "@/lib/types";
+import { getLocalStorageItem } from "@/lib/utils/storage";
 import {
   Dialog,
   DialogContent,
@@ -116,8 +117,8 @@ export function EnrichmentTable({
 
     try {
       // Get API keys from localStorage if not in environment
-      const firecrawlApiKey = localStorage.getItem("firecrawl_api_key");
-      const openaiApiKey = localStorage.getItem("openai_api_key");
+      const firecrawlApiKey = getLocalStorageItem("firecrawl_api_key");
+      const openaiApiKey = getLocalStorageItem("openai_api_key");
 
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -552,8 +553,8 @@ export function EnrichmentTable({
     ]);
 
     try {
-      const firecrawlApiKey = localStorage.getItem("firecrawl_api_key");
-      const openaiApiKey = localStorage.getItem("openai_api_key");
+      const firecrawlApiKey = getLocalStorageItem("firecrawl_api_key");
+      const openaiApiKey = getLocalStorageItem("openai_api_key");
 
       const headers: Record<string, string> = {
         "Content-Type": "application/json",

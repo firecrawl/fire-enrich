@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { getLocalStorageItem, setLocalStorageItem } from "@/lib/utils/storage";
 import { ArrowLeft, ExternalLink, Loader2 } from "lucide-react";
 import { CSVUploader } from "./csv-uploader";
 import { UnifiedEnrichmentView } from "./unified-enrichment-view";
@@ -56,7 +57,7 @@ export default function CSVEnrichmentPage() {
 
         if (!hasFirecrawl) {
           // Check localStorage for saved API key
-          const savedKey = localStorage.getItem("firecrawl_api_key");
+          const savedKey = getLocalStorageItem("firecrawl_api_key");
           if (savedKey) {
             setFirecrawlApiKey(savedKey);
           }
@@ -64,7 +65,7 @@ export default function CSVEnrichmentPage() {
 
         if (!hasOpenAI) {
           // Check localStorage for saved API key
-          const savedKey = localStorage.getItem("openai_api_key");
+          const savedKey = getLocalStorageItem("openai_api_key");
           if (savedKey) {
             setOpenaiApiKey(savedKey);
           }
@@ -85,8 +86,8 @@ export default function CSVEnrichmentPage() {
     const data = await response.json();
     const hasFirecrawl = data.environmentStatus.FIRECRAWL_API_KEY;
     const hasOpenAI = data.environmentStatus.OPENAI_API_KEY;
-    const savedFirecrawlKey = localStorage.getItem("firecrawl_api_key");
-    const savedOpenAIKey = localStorage.getItem("openai_api_key");
+    const savedFirecrawlKey = getLocalStorageItem("firecrawl_api_key");
+    const savedOpenAIKey = getLocalStorageItem("openai_api_key");
 
     if (
       (!hasFirecrawl && !savedFirecrawlKey) ||
@@ -136,8 +137,8 @@ export default function CSVEnrichmentPage() {
     const data = await response.json();
     const hasEnvFirecrawl = data.environmentStatus.FIRECRAWL_API_KEY;
     const hasEnvOpenAI = data.environmentStatus.OPENAI_API_KEY;
-    const hasSavedFirecrawl = localStorage.getItem("firecrawl_api_key");
-    const hasSavedOpenAI = localStorage.getItem("openai_api_key");
+    const hasSavedFirecrawl = getLocalStorageItem("firecrawl_api_key");
+    const hasSavedOpenAI = getLocalStorageItem("openai_api_key");
 
     const needsFirecrawl = !hasEnvFirecrawl && !hasSavedFirecrawl;
     const needsOpenAI = !hasEnvOpenAI && !hasSavedOpenAI;
@@ -171,12 +172,12 @@ export default function CSVEnrichmentPage() {
         }
 
         // Save the API key to localStorage
-        localStorage.setItem("firecrawl_api_key", firecrawlApiKey);
+        setLocalStorageItem("firecrawl_api_key", firecrawlApiKey);
       }
 
       // Save OpenAI API key if provided
       if (openaiApiKey) {
-        localStorage.setItem("openai_api_key", openaiApiKey);
+        setLocalStorageItem("openai_api_key", openaiApiKey);
       }
 
       toast.success("API keys saved successfully!");
