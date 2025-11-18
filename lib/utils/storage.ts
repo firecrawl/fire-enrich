@@ -40,15 +40,15 @@ export function setLocalStorageItem(key: string, value: string): boolean {
  * Returns true if successful, false otherwise
  */
 export function removeLocalStorageItem(key: string): boolean {
-  if (typeof window === 'undefined') return false;
-  if (!window.localStorage) return false;
-  if (typeof window.localStorage.removeItem !== 'function') return false;
-
   try {
+    if (typeof window === 'undefined') return false;
+    if (!window.localStorage) return false;
+    if (typeof window.localStorage.removeItem !== 'function') return false;
+
     window.localStorage.removeItem(key);
     return true;
   } catch (error) {
-    console.error('Error removing from localStorage:', error);
+    // Silently fail - localStorage might be blocked or unavailable
     return false;
   }
 }
