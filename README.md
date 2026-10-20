@@ -20,7 +20,7 @@ Turn a simple list of emails into a rich dataset with company profiles, funding 
 
 | Service | Purpose | Get Key |
 |---------|---------|---------|
-| Firecrawl | Web scraping and content aggregation | [firecrawl.dev/app/api-keys](https://www.firecrawl.dev/app/api-keys) |
+| Firecrawl (optional for enrichment) | Firecrawl search, HTML scraping and chat tools | [firecrawl.dev/app/api-keys](https://www.firecrawl.dev/app/api-keys) |
 | OpenAI | Intelligent data extraction | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
 
 ### Quick Start
@@ -28,12 +28,42 @@ Turn a simple list of emails into a rich dataset with company profiles, funding 
 1. Clone this repository
 2. Create a `.env.local` file with your API keys:
    ```
-   FIRECRAWL_API_KEY=your_firecrawl_key
    OPENAI_API_KEY=your_openai_key
+   # Optional: keep using Firecrawl for web research and HTML scraping
+   # FIRECRAWL_API_KEY=your_firecrawl_key
    ```
 3. Install dependencies: `npm install` or `yarn install`
 4. Run the development server: `npm run dev` or `yarn dev`
 5. Open [http://localhost:3000](http://localhost:3000)
+
+### Web research provider
+
+Enrichment uses free [Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp)
+when no Firecrawl key is configured. It connects to `https://search.parallel.ai/mcp`
+using Streamable HTTP, with no Parallel account or API key. Search runs in Fast mode;
+search and page-fetch excerpts feed the existing extraction and citation pipeline.
+OpenAI is still required for extraction.
+
+Existing Firecrawl keys in the server environment or browser storage continue to
+select Firecrawl. Server keys keep their existing precedence over browser keys.
+To choose explicitly, set `WEB_SEARCH_PROVIDER` on the server:
+
+| Value | Behavior |
+|-------|----------|
+| unset | Firecrawl when a key is configured; otherwise Parallel |
+| `parallel` | Parallel, even when a Firecrawl key is present |
+| `firecrawl` | Firecrawl; requires a Firecrawl key |
+| `disabled` | No web search or page fetching during enrichment |
+
+A configured provider failure never switches to another provider. Parallel returns
+page text, not raw HTML, so HTML-based technology detection requires Firecrawl.
+The separate chat and direct scrape tools also still require a Firecrawl key.
+Parallel's anonymous service is intended for exploration and light use and has
+usage limits. Each row's research shares one opaque session ID across related
+search and fetch calls; concurrent rows have separate IDs. MCP requests time out
+after 30 seconds and are cancelled when enrichment is stopped.
+
+Run the focused enrichment integration tests with `npm run test:research`.
 
 ## Example Enrichment
 
