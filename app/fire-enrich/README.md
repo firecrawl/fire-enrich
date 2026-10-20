@@ -85,9 +85,9 @@ Includes confidence scores and sources
 
 ### API Key Configuration
 
-Fire Enrich requires two API keys:
+Fire Enrich requires an OpenAI key. A Firecrawl key is optional for enrichment: without it, web research uses free anonymous Parallel Search MCP. See the [web research provider settings](../../README.md#web-research-provider).
 
-#### 1. Firecrawl API Key
+#### 1. Firecrawl API Key (optional for enrichment)
 - Sign up at [firecrawl.dev](https://firecrawl.dev)
 - Get your API key from the dashboard
 - Used for web scraping and search
@@ -113,8 +113,9 @@ pnpm install
 3. Configure environment variables:
 ```bash
 # Create .env.local file
-FIRECRAWL_API_KEY=your_firecrawl_key
 OPENAI_API_KEY=your_openai_key
+# Optional: select Firecrawl research and enable HTML scraping/chat
+# FIRECRAWL_API_KEY=your_firecrawl_key
 ```
 
 4. Run the development server:

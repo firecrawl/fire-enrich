@@ -80,7 +80,7 @@ export default function CSVEnrichmentPage() {
   }, []);
 
   const handleCSVUpload = async (rows: CSVRow[], columns: string[]) => {
-    // Check if we have Firecrawl API key
+    // OpenAI is required; Firecrawl is optional unless explicitly selected.
     const response = await fetch("/api/check-env");
     const data = await response.json();
     const hasFirecrawl = data.environmentStatus.FIRECRAWL_API_KEY;
@@ -89,7 +89,7 @@ export default function CSVEnrichmentPage() {
     const savedOpenAIKey = localStorage.getItem("openai_api_key");
 
     if (
-      (!hasFirecrawl && !savedFirecrawlKey) ||
+      (data.environmentStatus.REQUIRES_FIRECRAWL_KEY && !hasFirecrawl && !savedFirecrawlKey) ||
       (!hasOpenAI && !savedOpenAIKey)
     ) {
       // Save the CSV data temporarily and show API key modal
@@ -139,7 +139,7 @@ export default function CSVEnrichmentPage() {
     const hasSavedFirecrawl = localStorage.getItem("firecrawl_api_key");
     const hasSavedOpenAI = localStorage.getItem("openai_api_key");
 
-    const needsFirecrawl = !hasEnvFirecrawl && !hasSavedFirecrawl;
+    const needsFirecrawl = data.environmentStatus.REQUIRES_FIRECRAWL_KEY && !hasEnvFirecrawl && !hasSavedFirecrawl;
     const needsOpenAI = !hasEnvOpenAI && !hasSavedOpenAI;
 
     if (needsFirecrawl && !firecrawlApiKey.trim()) {
@@ -329,8 +329,9 @@ export default function CSVEnrichmentPage() {
           <DialogHeader>
             <DialogTitle>API Keys Required</DialogTitle>
             <DialogDescription>
-              This tool requires API keys for Firecrawl and OpenAI to enrich
-              your CSV data.
+              OpenAI is required for extraction. Web research uses free Parallel
+              search when no Firecrawl key is set. Add a Firecrawl key to use
+              Firecrawl search and HTML scraping instead.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-4">
@@ -350,7 +351,7 @@ export default function CSVEnrichmentPage() {
                     htmlFor="firecrawl-key"
                     className="text-sm font-medium"
                   >
-                    Firecrawl API Key
+                    Firecrawl API Key (optional unless selected on the server)
                   </label>
                   <Input
                     id="firecrawl-key"
@@ -411,7 +412,7 @@ export default function CSVEnrichmentPage() {
             </Button>
             <Button
               onClick={handleApiKeySubmit}
-              disabled={isValidatingApiKey || !firecrawlApiKey.trim()}
+              disabled={isValidatingApiKey || (missingKeys.openai && !openaiApiKey.trim())}
               variant="code"
             >
               {isValidatingApiKey ? (

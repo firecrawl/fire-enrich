@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AgentEnrichmentStrategy } from '@/lib/strategies/agent-enrichment-strategy';
 import type { EnrichmentRequest, RowEnrichmentResult } from '@/lib/types';
 import { loadSkipList, shouldSkipEmail, getSkipReason } from '@/lib/utils/skip-list';
+import { resolveResearchProvider } from '@/lib/services/research';
 import { ENRICHMENT_CONFIG } from '@/lib/config/enrichment';
 
 // Use Node.js runtime for better compatibility
@@ -48,13 +49,13 @@ export async function POST(request: NextRequest) {
     // Use a more compatible UUID generation
     const sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const abortController = new AbortController();
-    activeSessions.set(sessionId, abortController);
+    const researchSignal = AbortSignal.any([abortController.signal, request.signal]);
 
     // Check environment variables and headers for API keys
     const openaiApiKey = process.env.OPENAI_API_KEY || request.headers.get('X-OpenAI-API-Key');
     const firecrawlApiKey = process.env.FIRECRAWL_API_KEY || request.headers.get('X-Firecrawl-API-Key');
     
-    if (!openaiApiKey || !firecrawlApiKey) {
+    if (!openaiApiKey) {
       console.error('Missing API keys:', { 
         hasOpenAI: !!openaiApiKey, 
         hasFirecrawl: !!firecrawlApiKey 
@@ -64,6 +65,10 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Validate explicit provider choices before starting the response.
+    resolveResearchProvider(firecrawlApiKey || undefined);
+    activeSessions.set(sessionId, abortController);
 
     // Always use the advanced agent architecture
     const strategyName = 'AgentEnrichmentStrategy';
@@ -109,7 +114,7 @@ export async function POST(request: NextRequest) {
           // Process rows with rolling concurrency
           const processRow = async (i: number) => {
             // Check if cancelled
-            if (abortController.signal.aborted) {
+            if (researchSignal.aborted) {
               return;
             }
 
@@ -181,7 +186,8 @@ export async function POST(request: NextRequest) {
                       })}\n\n`
                     )
                   );
-                }
+                },
+                researchSignal
               );
               result.rowIndex = i; // Set the correct row index
 
@@ -233,7 +239,7 @@ export async function POST(request: NextRequest) {
 
           while (currentIndex < rows.length || activePromises.length > 0) {
             // Check if cancelled
-            if (abortController.signal.aborted) {
+            if (researchSignal.aborted) {
               controller.enqueue(
                 encoder.encode(
                   `data: ${JSON.stringify({ type: 'cancelled' })}\n\n`

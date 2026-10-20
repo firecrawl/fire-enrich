@@ -7,7 +7,7 @@ export class AgentEnrichmentStrategy {
   
   constructor(
     openaiApiKey: string,
-    firecrawlApiKey: string,
+    firecrawlApiKey: string | undefined,
   ) {
     this.orchestrator = new AgentOrchestrator(firecrawlApiKey, openaiApiKey);
   }
@@ -17,7 +17,8 @@ export class AgentEnrichmentStrategy {
     fields: EnrichmentField[],
     emailColumn: string,
     onProgress?: (field: string, value: unknown) => void,
-    onAgentProgress?: (message: string, type: 'info' | 'success' | 'warning' | 'agent') => void
+    onAgentProgress?: (message: string, type: 'info' | 'success' | 'warning' | 'agent') => void,
+    signal?: AbortSignal
   ): Promise<RowEnrichmentResult> {
     const email = row[emailColumn];
     console.log(`[AgentEnrichmentStrategy] Starting enrichment for email: ${email}`);
@@ -56,7 +57,8 @@ export class AgentEnrichmentStrategy {
         fields,
         emailColumn,
         onProgress,
-        onAgentProgress
+        onAgentProgress,
+        signal
       );
       
       // Filter out null values to match the expected type

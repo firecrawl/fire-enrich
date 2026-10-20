@@ -1,18 +1,20 @@
 import { EmailContext, RowEnrichmentResult } from './core/types';
 import { EnrichmentResult, SearchResult, EnrichmentField } from '../types';
 import { parseEmail } from '../strategies/email-parser';
-import { FirecrawlService } from '../services/firecrawl';
+import { createResearchService, type ResearchService } from '../services/research';
 import { OpenAIService } from '../services/openai';
 
+interface ResearchContext extends Record<string, unknown> {
+  research: ResearchService;
+}
+
 export class AgentOrchestrator {
-  private firecrawl: FirecrawlService;
   private openai: OpenAIService;
   
   constructor(
-    private firecrawlApiKey: string,
+    private firecrawlApiKey: string | undefined,
     private openaiApiKey: string
   ) {
-    this.firecrawl = new FirecrawlService(firecrawlApiKey);
     this.openai = new OpenAIService(openaiApiKey);
   }
   
@@ -21,12 +23,13 @@ export class AgentOrchestrator {
     fields: EnrichmentField[],
     emailColumn: string,
     onProgress?: (field: string, value: unknown) => void,
-    onAgentProgress?: (message: string, type: 'info' | 'success' | 'warning' | 'agent') => void
+    onAgentProgress?: (message: string, type: 'info' | 'success' | 'warning' | 'agent') => void,
+    signal?: AbortSignal
   ): Promise<RowEnrichmentResult> {
     const email = row[emailColumn];
     console.log(`[Orchestrator] Starting enrichment for email: ${email}`);
     
-    interface OrchestrationContext extends Record<string, unknown> {
+    interface OrchestrationContext extends ResearchContext {
       email: string;
       emailContext: EmailContext;
       discoveredData: Record<string, unknown>;
@@ -43,7 +46,9 @@ export class AgentOrchestrator {
       };
     }
     
+    const research = createResearchService(this.firecrawlApiKey, signal);
     try {
+      signal?.throwIfAborted();
       // Step 1: Extract email context
       console.log(`[Orchestrator] Extracting email context from: ${email}`);
       const emailContext = this.extractEmailContext(email);
@@ -73,7 +78,7 @@ export class AgentOrchestrator {
       
       // Step 3: Progressive enrichment
       const enrichments: Record<string, unknown> = {};
-      const context: OrchestrationContext = { email, emailContext, discoveredData: {} };
+      const context: OrchestrationContext = { email, emailContext, discoveredData: {}, research };
       
       // Discovery phase (company identity)
       if (fieldCategories.discovery.length > 0) {
@@ -239,6 +244,7 @@ export class AgentOrchestrator {
         }
       }
       
+      signal?.throwIfAborted();
       // Convert to enrichment result format
       const enrichmentResults = this.formatEnrichmentResults(enrichments, fields);
       
@@ -272,6 +278,8 @@ export class AgentOrchestrator {
         status: 'error',
         error: error instanceof Error ? error.message : 'Unknown error',
       };
+    } finally {
+      await research.close();
     }
   }
   
@@ -347,7 +355,7 @@ export class AgentOrchestrator {
   }
   
   private async runDiscoveryPhase(
-    context: Record<string, unknown>,
+    context: ResearchContext,
     fields: EnrichmentField[],
     onAgentProgress?: (message: string, type: 'info' | 'success' | 'warning' | 'agent') => void
   ): Promise<Record<string, unknown>> {
@@ -368,7 +376,7 @@ export class AgentOrchestrator {
         onAgentProgress(`Attempting to access ${ctxEmailContext.companyDomain} directly...`, 'info');
       }
       try {
-        const scraped = await this.firecrawl.scrapeUrl(websiteUrl);
+        const scraped = await context.research.scrapeUrl(websiteUrl);
         
         if (scraped.data && scraped.data.markdown && this.isValidCompanyWebsite({ markdown: scraped.data.markdown, metadata: scraped.data as Record<string, unknown> })) {
           console.log(`[AGENT-DISCOVERY] Website scrape successful, content length: ${scraped.data.markdown?.length || 0}`);
@@ -505,7 +513,7 @@ export class AgentOrchestrator {
           if (onAgentProgress) {
             onAgentProgress(`Search ${searchQueries.indexOf(query) + 1}/${searchQueries.length}: ${query.substring(0, 60)}...`, 'info');
           }
-          const searchResults = await this.firecrawl.search(
+          const searchResults = await context.research.search(
             query,
             { limit: 3 }
           );
@@ -604,7 +612,7 @@ export class AgentOrchestrator {
   }
   
   private async runProfilePhase(
-    context: Record<string, unknown>,
+    context: ResearchContext,
     fields: EnrichmentField[],
     onAgentProgress?: (message: string, type: 'info' | 'success' | 'warning' | 'agent') => void
   ): Promise<Record<string, unknown>> {
@@ -646,7 +654,7 @@ export class AgentOrchestrator {
       onAgentProgress(`Searching for profile information...`, 'info');
     }
     
-    const searchResults = await this.firecrawl.search(searchQuery, { limit: 5, scrapeContent: true });
+    const searchResults = await context.research.search(searchQuery, { limit: 5, scrapeContent: true });
     
     console.log(`[AGENT-PROFILE] Found ${searchResults.length} search results`);
     
@@ -766,7 +774,7 @@ export class AgentOrchestrator {
   }
   
   private async runMetricsPhase(
-    context: Record<string, unknown>,
+    context: ResearchContext,
     fields: EnrichmentField[],
     onAgentProgress?: (message: string, type: 'info' | 'success' | 'warning' | 'agent') => void
   ): Promise<Record<string, unknown>> {
@@ -807,7 +815,7 @@ export class AgentOrchestrator {
       onAgentProgress(`Query: ${searchQuery.substring(0, 100)}...`, 'info');
     }
     
-    const searchResults = await this.firecrawl.search(searchQuery, { limit: 5, scrapeContent: true });
+    const searchResults = await context.research.search(searchQuery, { limit: 5, scrapeContent: true });
     
     console.log(`[AGENT-METRICS] Found ${searchResults.length} search results`);
     if (onAgentProgress) {
@@ -923,7 +931,7 @@ export class AgentOrchestrator {
   }
   
   private async runFundingPhase(
-    context: Record<string, unknown>,
+    context: ResearchContext,
     fields: EnrichmentField[],
     onAgentProgress?: (message: string, type: 'info' | 'success' | 'warning' | 'agent') => void
   ): Promise<Record<string, unknown>> {
@@ -962,7 +970,7 @@ export class AgentOrchestrator {
       onAgentProgress(`Query: ${searchQuery.substring(0, 100)}...`, 'info');
     }
     
-    const searchResults = await this.firecrawl.search(searchQuery, { limit: 5, scrapeContent: true });
+    const searchResults = await context.research.search(searchQuery, { limit: 5, scrapeContent: true });
     
     console.log(`[AGENT-FUNDING] Found ${searchResults.length} search results`);
     if (onAgentProgress) {
@@ -1078,7 +1086,7 @@ export class AgentOrchestrator {
   }
   
   private async runTechStackPhase(
-    context: Record<string, unknown>,
+    context: ResearchContext,
     fields: EnrichmentField[],
     onAgentProgress?: (message: string, type: 'info' | 'success' | 'warning' | 'agent') => void
   ): Promise<Record<string, unknown>> {
@@ -1125,7 +1133,7 @@ export class AgentOrchestrator {
     
     let githubResults: SearchResult[] = [];
     try {
-      const searchResponse = await this.firecrawl.search(githubQuery, { 
+      const searchResponse = await context.research.search(githubQuery, {
         limit: 3,
         scrapeContent: true
       });
@@ -1157,7 +1165,7 @@ export class AgentOrchestrator {
     if (companyDomain) {
       try {
         console.log(`[AGENT-TECH-STACK] Fetching HTML from company website for analysis`);
-        const websiteData = await this.firecrawl.scrapeUrl(`https://${companyDomain}`);
+        const websiteData = await context.research.scrapeUrl(`https://${companyDomain}`);
         if (websiteData.data && websiteData.data.html) {
           websiteHtml = websiteData.data.html;
           console.log(`[AGENT-TECH-STACK] HTML fetched, length: ${websiteHtml.length}`);
@@ -1179,7 +1187,7 @@ export class AgentOrchestrator {
       onAgentProgress(`Searching for technology stack information...`, 'info');
     }
     
-    const techResults = await this.firecrawl.search(techSearchQuery, { 
+    const techResults = await context.research.search(techSearchQuery, {
       limit: 3,
       scrapeContent: true
     });
@@ -1311,7 +1319,7 @@ export class AgentOrchestrator {
   }
   
   private async runGeneralPhase(
-    context: Record<string, unknown>,
+    context: ResearchContext,
     fields: EnrichmentField[],
     onAgentProgress?: (message: string, type: 'info' | 'success' | 'warning' | 'agent') => void
   ): Promise<Record<string, unknown>> {
@@ -1360,7 +1368,7 @@ export class AgentOrchestrator {
         if (onAgentProgress) {
           onAgentProgress(`Search ${i + 1}/${searchQueries.length}: ${query.substring(0, 60)}...`, 'info');
         }
-        const searchResults = await this.firecrawl.search(query, { limit: 3, scrapeContent: true });
+        const searchResults = await context.research.search(query, { limit: 3, scrapeContent: true });
         
         if (searchResults && searchResults.length > 0) {
           console.log(`[AGENT-GENERAL] Found ${searchResults.length} results`);
@@ -1394,7 +1402,7 @@ export class AgentOrchestrator {
           if (onAgentProgress) {
             onAgentProgress(`Checking ${url.split('/').pop()} page...`, 'info');
           }
-          const scraped = await this.firecrawl.scrapeUrl(url);
+          const scraped = await context.research.scrapeUrl(url);
           if (scraped.data && scraped.data.markdown) {
             allSearchResults.push({
               url,
