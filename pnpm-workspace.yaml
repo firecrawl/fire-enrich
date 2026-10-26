@@ -1,0 +1,9 @@
+packages:
+  - '.'
+
+allowBuilds:
+  sharp: true
+  unrs-resolver: true
+
+overrides:
+  next>postcss: ^8.5.31

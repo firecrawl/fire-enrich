@@ -12,7 +12,7 @@ Turn a simple list of emails into a rich dataset with company profiles, funding 
 - **OpenAI**: Intelligent data extraction and synthesis
 - **Next.js 15**: Modern React framework with App Router
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fmendableai%2Ffire-enrich&env=FIRECRAWL_API_KEY,OPENAI_API_KEY&envDescription=API%20keys%20required%20for%20Fire%20Enrich&envLink=https%3A%2F%2Fgithub.com%2Fmendableai%2Ffire-enrich%23required-api-keys)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ffirecrawl%2Ffire-enrich&env=FIRECRAWL_API_KEY,OPENAI_API_KEY&envDescription=API%20keys%20required%20for%20Fire%20Enrich&envLink=https%3A%2F%2Fgithub.com%2Ffirecrawl%2Ffire-enrich%23required-api-keys)
 
 ## Setup
 
@@ -25,14 +25,16 @@ Turn a simple list of emails into a rich dataset with company profiles, funding 
 
 ### Quick Start
 
+Requires Node.js 18.18 or later.
+
 1. Clone this repository
 2. Create a `.env.local` file with your API keys:
    ```
    FIRECRAWL_API_KEY=your_firecrawl_key
    OPENAI_API_KEY=your_openai_key
    ```
-3. Install dependencies: `npm install` or `yarn install`
-4. Run the development server: `npm run dev` or `yarn dev`
+3. Install dependencies: `npm ci` (or `pnpm install --frozen-lockfile`)
+4. Run the development server: `npm run dev` (or `pnpm dev`)
 5. Open [http://localhost:3000](http://localhost:3000)
 
 ## Example Enrichment
