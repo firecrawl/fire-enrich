@@ -1865,6 +1865,11 @@ export class AgentOrchestrator {
     // Extract domain from URL for validation
     const urlDomain = url.replace(/^https?:\/\//, '').split('/')[0].toLowerCase();
     const baseDomain = urlDomain.replace(/^www\./, '').split('.')[0];
+    const matchesDomain = (name: string) => {
+      const compact = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+      return (compact.startsWith(baseDomain) && compact.length <= baseDomain.length + 4) ||
+        (compact.length >= 4 && baseDomain.includes(compact));
+    };
     
     console.log(`[ORCHESTRATOR] Extracting company name for domain: ${urlDomain}`);
     
@@ -1915,9 +1920,7 @@ export class AgentOrchestrator {
       const match = markdown.match(pattern);
       if (match && match[1]) {
         const name = match[1].trim();
-        // Validate the name against the domain
-        const nameLower = name.toLowerCase().replace(/\s+/g, '');
-        if (nameLower.includes(baseDomain) || baseDomain.includes(nameLower.substring(0, 4))) {
+        if (matchesDomain(name)) {
           console.log(`[ORCHESTRATOR] Found company name via pattern: ${name}`);
           return name;
         }
@@ -1927,8 +1930,8 @@ export class AgentOrchestrator {
     // Try metadata title but validate against domain
     if (metadata.title && typeof metadata.title === 'string') {
       const cleaned = metadata.title
-        .replace(/\s*[\||-]\s*(?:Official\s*)?(?:Website|Site|Home|Page)?\s*$/gi, '')
-        .replace(/\s*[\||-]\s*[^|]+$/i, '')
+        .replace(/\s*[\||\-–—·]\s*(?:Official\s*)?(?:Website|Site|Home|Page)?\s*$/gi, '')
+        .replace(/\s*[\||\-–—·]\s*[^|]+$/i, '')
         .replace(/\s*:\s*[^:]+$/i, '')
         .replace(/\s*-\s*[^-]+$/i, '')
         .replace(/\.com.*$/i, '')
@@ -1936,9 +1939,7 @@ export class AgentOrchestrator {
         .trim();
       
       if (cleaned && cleaned.length > 2) {
-        const cleanedLower = cleaned.toLowerCase().replace(/\s+/g, '');
-        // Validate against domain
-        if (cleanedLower.includes(baseDomain) || baseDomain.includes(cleanedLower.substring(0, 4))) {
+        if (matchesDomain(cleaned)) {
           console.log(`[ORCHESTRATOR] Found company name in title: ${cleaned}`);
           return cleaned;
         }

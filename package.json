@@ -9,12 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^1.3.22",
     "@hookform/resolvers": "^5.0.1",
-    "@langchain/core": "^0.3.57",
-    "@langchain/langgraph": "^0.2.74",
-    "@langchain/openai": "^0.5.11",
-    "@mendable/firecrawl-js": "^1.25.1",
+    "@mendable/firecrawl-js": "^4.51.0",
     "@radix-ui/react-accordion": "^1.2.10",
     "@radix-ui/react-alert-dialog": "^1.1.13",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
@@ -44,7 +40,6 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "@upstash/ratelimit": "^2.0.5",
     "@upstash/redis": "^1.34.9",
-    "ai": "^4.3.16",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "classnames": "^2.5.1",
@@ -58,7 +53,7 @@
     "lucide-react": "^0.511.0",
     "motion": "^12.23.16",
     "nanoid": "^5.1.5",
-    "next": "15.3.2",
+    "next": "15.5.28",
     "next-themes": "^0.4.6",
     "openai": "^4.73.0",
     "papaparse": "^5.4.1",
@@ -90,11 +85,21 @@
     "@types/uuid": "^10.0.0",
     "autoprefixer": "^10.4.16",
     "eslint": "^9",
-    "eslint-config-next": "15.3.2",
+    "eslint-config-next": "15.5.28",
     "postcss": "^8.4.32",
     "postcss-import": "^16.1.1",
     "postcss-nesting": "^13.0.2",
     "tailwindcss": "^3.4.0",
     "typescript": "^5"
+  },
+  "pnpm": {
+    "overrides": {
+      "next>postcss": "^8.5.31"
+    }
+  },
+  "overrides": {
+    "next": {
+      "postcss": "^8.5.31"
+    }
   }
 }
