@@ -178,26 +178,26 @@ export function UnifiedEnrichmentView({
 
       // Convert API response format to frontend format
       if (result.success && result.data && result.data.fields) {
+        // Reserve names across the whole batch as well as selected fields.
+        const existingNames = selectedFields.map((f) => f.name);
         const convertedFields = result.data.fields.map(
           (field: {
             displayName: string;
             description: string;
             type: string;
-          }) => ({
-            name: generateVariableName(
-              field.displayName,
-              selectedFields.map((f) => f.name),
-            ),
-            displayName: field.displayName,
-            description: field.description,
-            type:
-              field.type === "text"
+          }) => {
+            const name = generateVariableName(field.displayName, existingNames);
+            existingNames.push(name);
+            return {
+              name,
+              displayName: field.displayName,
+              description: field.description,
+              type: field.type === "text"
                 ? "string"
-                : field.type === "array"
-                  ? "string"
-                  : (field.type as "string" | "number" | "boolean" | "array"),
-            required: false,
-          }),
+                : (field.type as "string" | "number" | "boolean" | "array"),
+              required: false,
+            };
+          },
         );
         setSuggestedFields(convertedFields);
       } else {
