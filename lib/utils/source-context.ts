@@ -4,13 +4,27 @@ export interface SourceContext {
   confidence: number;
 }
 
+// Match complete numeric tokens so citations cannot turn 1000 into evidence for 100.
+function findNumericValue(content: string, value: number): number {
+  if (!Number.isFinite(value)) return -1;
+  const tokens = /(?<![\w.,+-])[-+]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?[kmb]?(?![\w]|[.,]\d)/gi;
+  for (const match of content.matchAll(tokens)) {
+    const token = match[0].toLowerCase();
+    const suffix = token.slice(-1);
+    const multiplier = suffix === 'k' ? 1000 : suffix === 'm' ? 1000000 : suffix === 'b' ? 1000000000 : 1;
+    const numeric = Number(token.replace(/[kmb]$/, '').replace(/,/g, '')) * multiplier;
+    if (numeric === value) return match.index!;
+  }
+  return -1;
+}
+
 export function findRelevantSnippet(
   content: string,
   value: string | number | boolean | string[],
   fieldName: string,
   contextWindow: number = 200
 ): string {
-  if (typeof value === 'boolean' || !content || !value || Array.isArray(value)) {
+  if (typeof value === 'boolean' || !content || value === null || value === undefined || value === '' || Array.isArray(value)) {
     return '';
   }
   
@@ -21,23 +35,7 @@ export function findRelevantSnippet(
   let index = -1;
   
   if (typeof value === 'number') {
-    // For numbers, look for exact matches with word boundaries
-    const numberPatterns = [
-      searchValue, // exact number
-      searchValue.replace(/000$/g, 'k'), // 1000 -> 1k
-      searchValue.replace(/000000$/g, 'm'), // 1000000 -> 1m
-      Number(value).toLocaleString(), // 1000 -> 1,000
-    ];
-    
-    for (const pattern of numberPatterns) {
-      // Use regex to ensure we're not matching part of a larger number
-      const regex = new RegExp(`\\b${pattern}\\b`, 'i');
-      const match = content.match(regex);
-      if (match && match.index !== undefined) {
-        index = match.index;
-        break;
-      }
-    }
+    index = findNumericValue(content, value);
   } else {
     // For strings, try exact match first
     index = contentLower.indexOf(searchValue);
@@ -111,23 +109,7 @@ export function validateSnippetContainsValue(
   
   // Handle numbers
   if (typeof value === 'number') {
-    // Check for exact number
-    if (snippetLower.includes(value.toString())) {
-      return true;
-    }
-    
-    // Check for formatted variations
-    const variations = [
-      value.toString(),
-      value.toLocaleString(), // 1000 -> 1,000
-      value >= 1000 ? (value / 1000).toString() + 'k' : '', // 1000 -> 1k
-      value >= 1000000 ? (value / 1000000).toString() + 'm' : '', // 1000000 -> 1m
-    ].filter(Boolean);
-    
-    return variations.some(variant => {
-      const regex = new RegExp(`\\b${variant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-      return regex.test(snippet);
-    });
+    return findNumericValue(snippet, value) !== -1;
   }
   
   // Handle strings
