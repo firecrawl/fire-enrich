@@ -12,7 +12,8 @@ export function detectEmailColumn(rows: CSVRow[], columns: string[]): {
   }
 
   let bestColumn: string | null = null;
-  let bestScore = 0;
+  let bestEmailCount = 0;
+  let bestNameScore = -1;
   let bestIndex = -1;
 
   columns.forEach((column, index) => {
@@ -37,18 +38,18 @@ export function detectEmailColumn(rows: CSVRow[], columns: string[]): {
       }
     }
 
-    const dataScore = (emailCount / sampleSize) * 10;
-    const totalScore = nameScore + dataScore;
-
-    if (totalScore > bestScore) {
-      bestScore = totalScore;
+    // A header hint must never outweigh actual addresses in another column.
+    if (emailCount > 0 && (emailCount > bestEmailCount ||
+        (emailCount === bestEmailCount && nameScore > bestNameScore))) {
+      bestEmailCount = emailCount;
+      bestNameScore = nameScore;
       bestColumn = column;
       bestIndex = index;
     }
   });
 
-  // Calculate confidence (max possible score is 20: 10 for name + 10 for data)
-  const confidence = bestScore > 0 ? (bestScore / 20) * 100 : 0;
+  // Report the observed email fraction; a suggestive header adds no evidence.
+  const confidence = (bestEmailCount / Math.min(rows.length, 10)) * 100;
 
   return {
     columnName: bestColumn,
