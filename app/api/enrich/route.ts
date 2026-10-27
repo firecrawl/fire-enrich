@@ -10,6 +10,26 @@ export const runtime = 'nodejs';
 // Store active sessions in memory (in production, use Redis or similar)
 const activeSessions = new Map<string, AbortController>();
 
+function isEnrichmentRequest(value: unknown): value is EnrichmentRequest {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const body = value as Record<string, unknown>;
+  if (!Array.isArray(body.rows) || body.rows.length === 0 ||
+      !body.rows.every(row => row && typeof row === 'object' && !Array.isArray(row) &&
+        Object.values(row).every(cell => typeof cell === 'string'))) return false;
+  if (typeof body.emailColumn !== 'string' || !body.emailColumn.trim() ||
+      (body.nameColumn !== undefined && typeof body.nameColumn !== 'string')) return false;
+  if (!Array.isArray(body.fields) || body.fields.length === 0 || body.fields.length > 10) return false;
+  const names = new Set<string>();
+  return body.fields.every(field => {
+    if (!field || typeof field !== 'object' || Array.isArray(field) ||
+        typeof field.name !== 'string' || !field.name.trim() || names.has(field.name) ||
+        typeof field.displayName !== 'string' || typeof field.description !== 'string' ||
+        typeof field.required !== 'boolean' || !['string', 'number', 'boolean', 'array'].includes(field.type)) return false;
+    names.add(field.name);
+    return true;
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Add request body size check
@@ -21,29 +41,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body: EnrichmentRequest = await request.json();
+    // Check actual bytes as Content-Length may be omitted (e.g. chunked requests).
+    const rawBody = await request.text();
+    if (new TextEncoder().encode(rawBody).byteLength > 5 * 1024 * 1024) {
+      return NextResponse.json({ error: 'Request body too large' }, { status: 413 });
+    }
+    let body: unknown;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
+    if (!isEnrichmentRequest(body)) {
+      return NextResponse.json(
+        { error: 'Expected data rows, an email column and 1-10 uniquely named enrichment fields with valid types' },
+        { status: 400 }
+      );
+    }
     const { rows, fields, emailColumn, nameColumn } = body;
-
-    if (!rows || rows.length === 0) {
-      return NextResponse.json(
-        { error: 'No rows provided' },
-        { status: 400 }
-      );
-    }
-
-    if (!fields || fields.length === 0 || fields.length > 10) {
-      return NextResponse.json(
-        { error: 'Please provide 1-10 fields to enrich' },
-        { status: 400 }
-      );
-    }
-
-    if (!emailColumn) {
-      return NextResponse.json(
-        { error: 'Email column is required' },
-        { status: 400 }
-      );
-    }
 
     // Use a more compatible UUID generation
     const sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
