@@ -29,6 +29,7 @@ import {
   Info,
 } from "lucide-react";
 import { toast } from "sonner";
+import { readSSEData } from "@/lib/utils/sse";
 
 interface EnrichmentTableProps {
   rows: CSVRow[];
@@ -149,140 +150,129 @@ export function EnrichmentTable({
       }
 
       const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
 
       if (!reader) {
         throw new Error("No response body");
       }
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      for await (const eventData of readSSEData(reader)) {
+        try {
+          const data = JSON.parse(eventData);
 
-        const text = decoder.decode(value);
-        const lines = text.split("\n");
+          switch (data.type) {
+            case "session":
+              setSessionId(data.sessionId);
+              break;
 
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            try {
-              const data = JSON.parse(line.substring(6));
-
-              switch (data.type) {
-                case "session":
-                  setSessionId(data.sessionId);
-                  break;
-
-                case "pending":
-                  // Mark row as pending (queued but not yet started)
-                  setResults((prev) => {
-                    const newMap = new Map(prev);
-                    if (!newMap.has(data.rowIndex)) {
-                      newMap.set(data.rowIndex, {
-                        rowIndex: data.rowIndex,
-                        originalData: rows[data.rowIndex],
-                        enrichments: {},
-                        status: 'pending',
-                      });
-                    }
-                    return newMap;
+            case "pending":
+              // Mark row as pending (queued but not yet started)
+              setResults((prev) => {
+                const newMap = new Map(prev);
+                if (!newMap.has(data.rowIndex)) {
+                  newMap.set(data.rowIndex, {
+                    rowIndex: data.rowIndex,
+                    originalData: rows[data.rowIndex],
+                    enrichments: {},
+                    status: 'pending',
                   });
-                  break;
+                }
+                return newMap;
+              });
+              break;
 
-                case "processing":
-                  setCurrentRow(data.rowIndex);
-                  // Update status to processing
-                  setResults((prev) => {
-                    const newMap = new Map(prev);
-                    const existing = newMap.get(data.rowIndex);
-                    if (existing) {
-                      newMap.set(data.rowIndex, {
-                        ...existing,
-                        status: 'processing',
-                      });
-                    }
-                    return newMap;
+            case "processing":
+              setCurrentRow(data.rowIndex);
+              // Update status to processing
+              setResults((prev) => {
+                const newMap = new Map(prev);
+                const existing = newMap.get(data.rowIndex);
+                if (existing) {
+                  newMap.set(data.rowIndex, {
+                    ...existing,
+                    status: 'processing',
                   });
-                  break;
+                }
+                return newMap;
+              });
+              break;
 
-                case "result":
-                  setResults((prev) => {
-                    const newMap = new Map(prev);
-                    newMap.set(data.result.rowIndex, data.result);
-                    return newMap;
-                  });
-                  // Track when this row's data arrived
-                  setRowDataArrivalTime((prevTime) => {
-                    const newMap = new Map(prevTime);
-                    newMap.set(data.result.rowIndex, Date.now());
-                    return newMap;
-                  });
+            case "result":
+              setResults((prev) => {
+                const newMap = new Map(prev);
+                newMap.set(data.result.rowIndex, data.result);
+                return newMap;
+              });
+              // Track when this row's data arrived
+              setRowDataArrivalTime((prevTime) => {
+                const newMap = new Map(prevTime);
+                newMap.set(data.result.rowIndex, Date.now());
+                return newMap;
+              });
 
-                  // Mark all cells as shown after animation completes
-                  setTimeout(() => {
-                    const rowCells = fields.map(
-                      (f) => `${data.result.rowIndex}-${f.name}`,
-                    );
-                    setCellsShown((prev) => {
-                      const newSet = new Set(prev);
-                      rowCells.forEach((cell) => newSet.add(cell));
-                      return newSet;
-                    });
-                  }, 2500); // Slightly after all animations complete
-                  break;
+              // Mark all cells as shown after animation completes
+              setTimeout(() => {
+                const rowCells = fields.map(
+                  (f) => `${data.result.rowIndex}-${f.name}`,
+                );
+                setCellsShown((prev) => {
+                  const newSet = new Set(prev);
+                  rowCells.forEach((cell) => newSet.add(cell));
+                  return newSet;
+                });
+              }, 2500); // Slightly after all animations complete
+              break;
 
-                case "complete":
-                  setStatus("completed");
-                  // Add a final success message (only if not already added)
-                  setAgentMessages((prev) => {
-                    const hasCompletionMessage = prev.some(
-                      (msg) => msg.message === "All enrichment tasks completed successfully"
-                    );
-                    if (hasCompletionMessage) return prev;
+            case "complete":
+              setStatus("completed");
+              // Add a final success message (only if not already added)
+              setAgentMessages((prev) => {
+                const hasCompletionMessage = prev.some(
+                  (msg) => msg.message === "All enrichment tasks completed successfully"
+                );
+                if (hasCompletionMessage) return prev;
 
-                    return [
-                      ...prev,
-                      {
-                        id: `complete-${Date.now()}`,
-                        message: "All enrichment tasks completed successfully",
-                        type: "success",
-                        timestamp: Date.now(),
-                      },
-                    ];
-                  });
-                  break;
+                return [
+                  ...prev,
+                  {
+                    id: `complete-${Date.now()}`,
+                    message: "All enrichment tasks completed successfully",
+                    type: "success",
+                    timestamp: Date.now(),
+                  },
+                ];
+              });
+              break;
 
-                case "cancelled":
-                  setStatus("cancelled");
-                  break;
+            case "cancelled":
+              setStatus("cancelled");
+              break;
 
-                case "error":
-                  console.error("Enrichment error:", data.error);
-                  setStatus("completed");
-                  break;
+            case "error":
+              console.error("Enrichment error:", data.error);
+              setStatus("completed");
+              break;
 
-                case "agent_progress":
-                  setAgentMessages((prev) => {
-                    const newMessages = [
-                      ...prev,
-                      {
-                        id: `${Date.now()}-${Math.random()}`,
-                        message: data.message,
-                        type: data.messageType,
-                        timestamp: Date.now(),
-                        rowIndex: data.rowIndex,
-                        sourceUrl: data.sourceUrl, // Include sourceUrl for favicons
-                      },
-                    ];
+            case "agent_progress":
+              setAgentMessages((prev) => {
+                const newMessages = [
+                  ...prev,
+                  {
+                    id: `${Date.now()}-${Math.random()}`,
+                    message: data.message,
+                    type: data.messageType,
+                    timestamp: Date.now(),
+                    rowIndex: data.rowIndex,
+                    sourceUrl: data.sourceUrl, // Include sourceUrl for favicons
+                  },
+                ];
 
-                    // Keep messages for all rows, but limit to last 500 total
-                    return newMessages.slice(-500);
-                  });
-                  break;
-              }
-            } catch {
-              // Ignore parsing errors
-            }
+                // Keep messages for all rows, but limit to last 500 total
+                return newMessages.slice(-500);
+              });
+              break;
           }
+        } catch {
+          // Ignore malformed JSON events without dropping adjacent events.
         }
       }
     } catch (error) {
@@ -619,58 +609,47 @@ export function EnrichmentTable({
       }
 
       const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
 
       if (!reader) throw new Error("No response body");
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      for await (const eventData of readSSEData(reader)) {
+        try {
+          const data = JSON.parse(eventData);
 
-        const text = decoder.decode(value);
-        const lines = text.split("\n");
-
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            try {
-              const data = JSON.parse(line.substring(6));
-
-              if (data.type === "status") {
-                setAgentMessages((prev) => [
-                  ...prev,
-                  {
-                    id: `status-${Date.now()}-${Math.random()}`,
-                    message: data.message,
-                    type: "info",
-                    timestamp: Date.now(),
-                    sourceUrl: data.source?.url,
-                  },
-                ]);
-              } else if (data.type === "response") {
-                setAgentMessages((prev) => [
-                  ...prev,
-                  {
-                    id: `assistant-${Date.now()}`,
-                    message: data.message,
-                    type: "assistant",
-                    timestamp: Date.now(),
-                  },
-                ]);
-              } else if (data.type === "error") {
-                setAgentMessages((prev) => [
-                  ...prev,
-                  {
-                    id: `error-${Date.now()}`,
-                    message: data.message,
-                    type: "warning",
-                    timestamp: Date.now(),
-                  },
-                ]);
-              }
-            } catch {
-              // Ignore parsing errors
-            }
+          if (data.type === "status") {
+            setAgentMessages((prev) => [
+              ...prev,
+              {
+                id: `status-${Date.now()}-${Math.random()}`,
+                message: data.message,
+                type: "info",
+                timestamp: Date.now(),
+                sourceUrl: data.source?.url,
+              },
+            ]);
+          } else if (data.type === "response") {
+            setAgentMessages((prev) => [
+              ...prev,
+              {
+                id: `assistant-${Date.now()}`,
+                message: data.message,
+                type: "assistant",
+                timestamp: Date.now(),
+              },
+            ]);
+          } else if (data.type === "error") {
+            setAgentMessages((prev) => [
+              ...prev,
+              {
+                id: `error-${Date.now()}`,
+                message: data.message,
+                type: "warning",
+                timestamp: Date.now(),
+              },
+            ]);
           }
+        } catch {
+          // Ignore malformed JSON events without dropping adjacent events.
         }
       }
     } catch (error) {
