@@ -148,9 +148,18 @@ export function FieldMapper({ onFieldsSelected }: FieldMapperProps) {
 
     setIsGenerating(true);
     try {
+      let openaiApiKey: string | null = null;
+      try {
+        openaiApiKey = localStorage.getItem("openai_api_key");
+      } catch {
+        // Server-configured credentials still work when browser storage is blocked.
+      }
       const response = await fetch("/api/generate-fields", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(openaiApiKey ? { "X-OpenAI-API-Key": openaiApiKey } : {}),
+        },
         body: JSON.stringify({ prompt: nlPrompt }),
       });
 
