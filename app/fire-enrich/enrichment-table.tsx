@@ -29,6 +29,7 @@ import {
   Info,
 } from "lucide-react";
 import { toast } from "sonner";
+import { buildEnrichmentCSV, buildSkippedCSV } from "@/lib/utils/csv-export";
 
 interface EnrichmentTableProps {
   rows: CSVRow[];
@@ -312,67 +313,8 @@ export function EnrichmentTable({
   };
 
   const downloadCSV = () => {
-    // Build headers
-    const headers = [
-      emailColumn || "email",
-      ...fields.map((f) => f.displayName),
-      ...fields.map((f) => `${f.displayName}_confidence`),
-      ...fields.map((f) => `${f.displayName}_source`),
-    ];
-
-    const csvRows = [headers.map((h) => `"${h}"`).join(",")];
-
-    rows.forEach((row, index) => {
-      const result = results.get(index);
-      const values: string[] = [];
-
-      // Add email
-      const email = emailColumn ? row[emailColumn] : Object.values(row)[0];
-      values.push(`"${email || ""}"`);
-
-      // Add field values
-      fields.forEach((field) => {
-        const enrichment = result?.enrichments[field.name];
-        const value = enrichment?.value;
-        if (value === undefined || value === null) {
-          values.push("");
-        } else if (Array.isArray(value)) {
-          values.push(`"${value.join("; ")}"`);
-        } else if (
-          typeof value === "string" &&
-          (value.includes(",") || value.includes('"') || value.includes("\n"))
-        ) {
-          values.push(`"${value.replace(/"/g, '""')}"`);
-        } else {
-          values.push(String(value));
-        }
-      });
-
-      // Add confidence scores
-      fields.forEach((field) => {
-        const enrichment = result?.enrichments[field.name];
-        values.push(
-          enrichment?.confidence ? enrichment.confidence.toFixed(2) : "",
-        );
-      });
-
-      // Add sources
-      fields.forEach((field) => {
-        const enrichment = result?.enrichments[field.name];
-        if (enrichment?.sourceContext && enrichment.sourceContext.length > 0) {
-          const urls = enrichment.sourceContext.map((s) => s.url).join("; ");
-          values.push(`"${urls}"`);
-        } else if (enrichment?.source) {
-          values.push(`"${enrichment.source}"`);
-        } else {
-          values.push("");
-        }
-      });
-
-      csvRows.push(values.join(","));
-    });
-
-    const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
+    const csv = buildEnrichmentCSV(rows, fields, results, emailColumn);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -436,46 +378,9 @@ export function EnrichmentTable({
   };
 
   const downloadSkippedEmails = () => {
-    // Get all skipped rows
-    const skippedRows = rows.filter((_, index) => {
-      const result = results.get(index);
-      return result?.status === "skipped";
-    });
-
-    if (skippedRows.length === 0) {
-      return;
-    }
-
-    // Create CSV header
-    const headers = Object.keys(skippedRows[0]);
-    const csvRows = [headers.join(",")];
-
-    // Add skipped rows with skip reason
-    skippedRows.forEach((row, index) => {
-      const originalIndex = rows.findIndex((r) => r === row);
-      const result = results.get(originalIndex);
-      const values = headers.map((header) => {
-        const value = row[header];
-        // Escape quotes and wrap in quotes if necessary
-        if (
-          typeof value === "string" &&
-          (value.includes(",") || value.includes('"') || value.includes("\n"))
-        ) {
-          return `"${value.replace(/"/g, '""')}"`;
-        }
-        return value || "";
-      });
-
-      // Add skip reason as last column
-      if (index === 0) {
-        csvRows[0] += ",Skip Reason";
-      }
-      values.push(result?.error || "Personal email provider");
-
-      csvRows.push(values.join(","));
-    });
-
-    const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
+    const csv = buildSkippedCSV(rows, results);
+    if (!csv) return;
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
