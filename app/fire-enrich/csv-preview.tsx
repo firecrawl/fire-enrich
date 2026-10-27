@@ -23,9 +23,7 @@ export function CSVPreview({ rows, columns, onEmailColumnConfirmed }: CSVPreview
   useEffect(() => {
     const detected = detectEmailColumn(rows, columns);
     setDetectedColumn(detected);
-    if (detected.columnName) {
-      setSelectedColumn(detected.columnName);
-    }
+    setSelectedColumn(detected.columnName || '');
   }, [rows, columns]);
 
   const previewRows = getPreviewData(rows, 5);

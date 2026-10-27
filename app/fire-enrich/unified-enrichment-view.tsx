@@ -131,10 +131,8 @@ export function UnifiedEnrichmentView({
   useEffect(() => {
     if (rows && columns && Array.isArray(rows) && Array.isArray(columns)) {
       const detection = detectEmailColumn(rows, columns);
-      if (detection.columnName && detection.confidence > 50) {
-        setEmailColumn(detection.columnName);
-        // Stay on step 1 to let user confirm or change
-      }
+      setEmailColumn(detection.columnName && detection.confidence > 50 ? detection.columnName : "");
+      // Stay on step 1 to let user confirm or change.
     }
   }, [rows, columns]);
 
