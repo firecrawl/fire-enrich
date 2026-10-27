@@ -48,7 +48,6 @@ export async function POST(request: NextRequest) {
     // Use a more compatible UUID generation
     const sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const abortController = new AbortController();
-    activeSessions.set(sessionId, abortController);
 
     // Check environment variables and headers for API keys
     const openaiApiKey = process.env.OPENAI_API_KEY || request.headers.get('X-OpenAI-API-Key');
@@ -79,11 +78,28 @@ export async function POST(request: NextRequest) {
 
     // Create a streaming response
     const encoder = new TextEncoder();
+    let streamClosed = false;
+    let notifyCancelled: () => void;
+    const cancelled = new Promise<void>(resolve => { notifyCancelled = resolve; });
+    abortController.signal.addEventListener('abort', () => notifyCancelled(), { once: true });
+    const onDisconnect = () => abortController.abort();
+    request.signal.addEventListener('abort', onDisconnect, { once: true });
+    if (request.signal.aborted) abortController.abort();
+    activeSessions.set(sessionId, abortController);
+    const cleanup = () => {
+      activeSessions.delete(sessionId);
+      request.signal.removeEventListener('abort', onDisconnect);
+    };
     const stream = new ReadableStream({
       async start(controller) {
+        // In-flight providers may finish after cancellation. Their callbacks must
+        // never write into a closed stream or change the terminal event.
+        const enqueue = (chunk: Uint8Array, terminal = false) => {
+          if (!streamClosed && (terminal || !abortController.signal.aborted)) controller.enqueue(chunk);
+        };
         try {
           // Send session ID
-          controller.enqueue(
+          enqueue(
             encoder.encode(
               `data: ${JSON.stringify({ type: 'session', sessionId })}\n\n`
             )
@@ -95,7 +111,7 @@ export async function POST(request: NextRequest) {
 
           // Send pending status for all rows
           for (let i = 0; i < rows.length; i++) {
-            controller.enqueue(
+            enqueue(
               encoder.encode(
                 `data: ${JSON.stringify({
                   type: 'pending',
@@ -134,7 +150,7 @@ export async function POST(request: NextRequest) {
                 error: skipReason,
               };
 
-              controller.enqueue(
+              enqueue(
                 encoder.encode(
                   `data: ${JSON.stringify({
                     type: 'result',
@@ -147,7 +163,7 @@ export async function POST(request: NextRequest) {
             }
 
             // Send processing status
-            controller.enqueue(
+            enqueue(
               encoder.encode(
                 `data: ${JSON.stringify({
                   type: 'processing',
@@ -170,7 +186,7 @@ export async function POST(request: NextRequest) {
                 undefined, // onProgress
                 (message: string, type: 'info' | 'success' | 'warning' | 'agent', sourceUrl?: string) => {
                   // Stream agent progress messages
-                  controller.enqueue(
+                  enqueue(
                     encoder.encode(
                       `data: ${JSON.stringify({
                         type: 'agent_progress',
@@ -198,7 +214,7 @@ export async function POST(request: NextRequest) {
               }
 
               // Send result
-              controller.enqueue(
+              enqueue(
                 encoder.encode(
                   `data: ${JSON.stringify({
                     type: 'result',
@@ -216,7 +232,7 @@ export async function POST(request: NextRequest) {
                 error: error instanceof Error ? error.message : 'Unknown error',
               };
 
-              controller.enqueue(
+              enqueue(
                 encoder.encode(
                   `data: ${JSON.stringify({
                     type: 'result',
@@ -234,11 +250,6 @@ export async function POST(request: NextRequest) {
           while (currentIndex < rows.length || activePromises.length > 0) {
             // Check if cancelled
             if (abortController.signal.aborted) {
-              controller.enqueue(
-                encoder.encode(
-                  `data: ${JSON.stringify({ type: 'cancelled' })}\n\n`
-                )
-              );
               break;
             }
 
@@ -257,18 +268,18 @@ export async function POST(request: NextRequest) {
 
             // Wait for at least one to finish before continuing
             if (activePromises.length > 0) {
-              await Promise.race(activePromises);
+              await Promise.race([...activePromises, cancelled]);
             }
           }
 
-          // Send completion
-          controller.enqueue(
+          enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ type: 'complete' })}\n\n`
-            )
+              `data: ${JSON.stringify({ type: abortController.signal.aborted ? 'cancelled' : 'complete' })}\n\n`
+            ),
+            true
           );
         } catch (error) {
-          controller.enqueue(
+          enqueue(
             encoder.encode(
               `data: ${JSON.stringify({
                 type: 'error',
@@ -277,9 +288,17 @@ export async function POST(request: NextRequest) {
             )
           );
         } finally {
-          activeSessions.delete(sessionId);
-          controller.close();
+          cleanup();
+          if (!streamClosed) {
+            streamClosed = true;
+            controller.close();
+          }
         }
+      },
+      cancel() {
+        streamClosed = true;
+        abortController.abort();
+        cleanup();
       },
     });
 
