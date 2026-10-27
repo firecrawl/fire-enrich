@@ -15,7 +15,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!process.env.OPENAI_API_KEY) {
+    const openaiApiKey = process.env.OPENAI_API_KEY || request.headers.get('X-OpenAI-API-Key');
+    if (!openaiApiKey) {
       return NextResponse.json(
         { error: 'OpenAI API key not configured' },
         { status: 500 }
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: openaiApiKey,
     });
 
     const completion = await openai.chat.completions.create({
