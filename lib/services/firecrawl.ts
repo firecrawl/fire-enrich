@@ -104,25 +104,29 @@ export class FirecrawlService {
     
     // Ensure URL has protocol
     const fullUrl = url.startsWith('http') ? url : `https://${url}`;
+    let skipTlsVerification = false;
     
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        // First try with normal TLS verification
+        // Use the selected TLS mode; the first request verifies normally.
         const result = await this.app.scrape(fullUrl, {
           formats: ['markdown', 'html'],
+          ...(skipTlsVerification ? { skipTlsVerification: true } : {}),
           timeout: 30000, // 30 second timeout
         });
         
         return { data: { ...result.metadata, markdown: result.markdown, html: result.html } };
       } catch (error) {
         // Check if it's an SSL error
-        const errorWithMessage = error as { message?: string; status?: number };
+        let errorWithMessage = error as { message?: string; status?: number };
         const isSSLError = errorWithMessage?.message?.includes('SSL error') || 
                           errorWithMessage?.message?.includes('certificate') ||
                           errorWithMessage?.status === 500 && errorWithMessage?.message?.includes('SSL');
         
         // If SSL error, retry with skipTlsVerification
         if (isSSLError && attempt === 0) {
+          // Keep the selected fallback for retries within this scrape only.
+          skipTlsVerification = true;
           try {
             console.warn(`SSL error for ${fullUrl}, retrying with skipTlsVerification...`);
             const result = await this.app.scrape(fullUrl, {
@@ -134,6 +138,7 @@ export class FirecrawlService {
           } catch (retryError) {
             // Continue to normal retry logic
             error = retryError;
+            errorWithMessage = retryError as { message?: string; status?: number };
           }
         }
         
