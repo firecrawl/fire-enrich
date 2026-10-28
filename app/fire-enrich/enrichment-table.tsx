@@ -579,7 +579,7 @@ export function EnrichmentTable({
         const enrichedData: Record<string, any> = {};
         if (result?.enrichments) {
           Object.entries(result.enrichments).forEach(([key, enrichment]) => {
-            if (enrichment.value) {
+            if (enrichment.value !== null && enrichment.value !== undefined && enrichment.value !== "") {
               enrichedData[key] = enrichment.value;
             }
           });
@@ -1055,7 +1055,7 @@ export function EnrichmentTable({
                                         className="truncate max-w-xs"
                                         title={String(enrichment.value)}
                                       >
-                                        {enrichment.value || "-"}
+                                        {enrichment.value ?? "-"}
                                       </div>
                                     )}
                                   </div>
