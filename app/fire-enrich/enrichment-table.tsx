@@ -69,6 +69,10 @@ export function EnrichmentTable({
   const [isChatExpanded, setIsChatExpanded] = useState(true);
   const agentMessagesEndRef = useRef<HTMLDivElement>(null);
   const activityScrollRef = useRef<HTMLDivElement>(null);
+  const enrichmentControllerRef = useRef<AbortController | null>(null);
+
+  // The table owns its request, including while no session ID is available.
+  useEffect(() => () => enrichmentControllerRef.current?.abort(), []);
 
   // Track when each row's data arrives
   const [rowDataArrivalTime, setRowDataArrivalTime] = useState<
@@ -112,6 +116,9 @@ export function EnrichmentTable({
   );
 
   const startEnrichment = useCallback(async () => {
+    enrichmentControllerRef.current?.abort();
+    const controller = new AbortController();
+    enrichmentControllerRef.current = controller;
     setStatus("processing");
 
     try {
@@ -134,6 +141,7 @@ export function EnrichmentTable({
 
       const response = await fetch("/api/enrich", {
         method: "POST",
+        signal: controller.signal,
         headers,
         body: JSON.stringify({
           rows,
@@ -155,9 +163,9 @@ export function EnrichmentTable({
         throw new Error("No response body");
       }
 
-      while (true) {
+      while (!controller.signal.aborted) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done || controller.signal.aborted) break;
 
         const text = decoder.decode(value);
         const lines = text.split("\n");
@@ -286,8 +294,13 @@ export function EnrichmentTable({
         }
       }
     } catch (error) {
+      if (controller.signal.aborted) return;
       console.error("Failed to start enrichment:", error);
       setStatus("completed");
+    } finally {
+      if (enrichmentControllerRef.current === controller) {
+        enrichmentControllerRef.current = null;
+      }
     }
   }, [fields, rows, emailColumn, useAgents]);
 
@@ -298,6 +311,9 @@ export function EnrichmentTable({
   }, [startEnrichment, status]); // Add proper dependencies
 
   const cancelEnrichment = async () => {
+    enrichmentControllerRef.current?.abort();
+    setStatus("cancelled");
+    setCurrentRow(-1);
     if (sessionId) {
       try {
         await fetch(`/api/enrich?sessionId=${sessionId}`, {
@@ -306,8 +322,6 @@ export function EnrichmentTable({
       } catch (error) {
         console.error("Failed to cancel enrichment:", error);
       }
-      setStatus("cancelled");
-      setCurrentRow(-1);
     }
   };
 
