@@ -637,6 +637,14 @@ REMEMBER: Extract exact_text from the "=== ACTUAL CONTENT BELOW ===" section, NO
           
           // Only create result if we have a valid value
           if (consensusValue !== null && consensusValue !== undefined && consensusValue !== '') {
+            // Numeric consensus must come from evidence that survived validation.
+            if (field.type === 'number' && !validEvidence.some(
+              (e: { value: unknown }) => typeof e.value === 'number' && e.value === consensusValue
+            )) {
+              console.log(`[VALIDATION] No validated evidence supports numeric consensus for ${field.name}, skipping field`);
+              return;
+            }
+
             // Filter sourceContext to only include validated evidence
             const validSourceContext = validEvidence
               .filter((e: { exact_text: string }) => e.exact_text && e.exact_text.trim() !== '')
