@@ -1025,7 +1025,10 @@ Question: ${question}
       });
 
       const result = JSON.parse(response.choices[0].message.content || '{"index": 0}');
-      return sources[result.index] || sources[0];
+      const index = result?.index;
+      return Number.isInteger(index) && index >= 0 && index < sources.length
+        ? sources[index]
+        : sources[0];
     } catch (error) {
       console.error('Source selection error:', error);
       return sources[0];
