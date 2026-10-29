@@ -39,11 +39,32 @@ export async function POST(request: NextRequest) {
 
     // Create streaming response
     const encoder = new TextEncoder();
+    const abortForDisconnect = () => abortController.abort();
     const stream = new ReadableStream({
-      async start(controller) {
+      start(controller) {
+        let closed = false;
+        const close = () => {
+          if (closed) return;
+          closed = true;
+          activeQueries.delete(queryId);
+          request.signal.removeEventListener('abort', abortForDisconnect);
+          abortController.signal.removeEventListener('abort', close);
+          try { controller.close(); } catch { /* The consumer may already have cancelled. */ }
+        };
+        const send = (chunk: Uint8Array) => {
+          if (!closed && !abortController.signal.aborted) controller.enqueue(chunk);
+        };
+        const ensureActive = () => {
+          if (abortController.signal.aborted) throw new DOMException('Query cancelled', 'AbortError');
+        };
+        abortController.signal.addEventListener('abort', close, { once: true });
+        request.signal.addEventListener('abort', abortForDisconnect, { once: true });
+        if (request.signal.aborted) abortController.abort();
+        void (async () => {
         try {
+          ensureActive();
           // Step 1: Check table data first
-          controller.enqueue(
+          send(
             encoder.encode(
               `data: ${JSON.stringify({
                 type: 'status',
@@ -58,10 +79,11 @@ export async function POST(request: NextRequest) {
           if (tableData && tableData.trim().length > 0) {
             console.log('[Chat API] Checking table data, length:', tableData.length);
             const tableAnswer = await openai.answerFromTableData(question, tableData, conversationHistory);
+            ensureActive();
 
             if (tableAnswer && tableAnswer.found) {
               console.log('[Chat API] Answer found in table data');
-              controller.enqueue(
+              send(
                 encoder.encode(
                   `data: ${JSON.stringify({
                     type: 'status',
@@ -71,7 +93,7 @@ export async function POST(request: NextRequest) {
                 )
               );
 
-              controller.enqueue(
+              send(
                 encoder.encode(
                   `data: ${JSON.stringify({
                     type: 'response',
@@ -81,7 +103,7 @@ export async function POST(request: NextRequest) {
                 )
               );
 
-              controller.enqueue(
+              send(
                 encoder.encode(
                   `data: ${JSON.stringify({ type: 'complete' })}\n\n`
                 )
@@ -95,7 +117,7 @@ export async function POST(request: NextRequest) {
           }
 
           // Step 2: If not found in table, search the web
-          controller.enqueue(
+          send(
             encoder.encode(
               `data: ${JSON.stringify({
                 type: 'status',
@@ -109,8 +131,9 @@ export async function POST(request: NextRequest) {
             ...context,
             conversationHistory
           });
+          ensureActive();
 
-          controller.enqueue(
+          send(
             encoder.encode(
               `data: ${JSON.stringify({
                 type: 'status',
@@ -121,7 +144,7 @@ export async function POST(request: NextRequest) {
           );
 
           // Step 2: Search for relevant sources
-          controller.enqueue(
+          send(
             encoder.encode(
               `data: ${JSON.stringify({
                 type: 'status',
@@ -132,9 +155,10 @@ export async function POST(request: NextRequest) {
           );
 
           const searchResults = await firecrawl.search(searchQuery, { limit: 5 });
+          ensureActive();
 
           if (searchResults.length === 0) {
-            controller.enqueue(
+            send(
               encoder.encode(
                 `data: ${JSON.stringify({
                   type: 'response',
@@ -142,11 +166,11 @@ export async function POST(request: NextRequest) {
                 })}\n\n`
               )
             );
-            controller.close();
+            close();
             return;
           }
 
-          controller.enqueue(
+          send(
             encoder.encode(
               `data: ${JSON.stringify({
                 type: 'status',
@@ -158,7 +182,7 @@ export async function POST(request: NextRequest) {
           );
 
           // Step 3: Evaluating sources
-          controller.enqueue(
+          send(
             encoder.encode(
               `data: ${JSON.stringify({
                 type: 'status',
@@ -169,8 +193,9 @@ export async function POST(request: NextRequest) {
           );
 
           const bestSource = await openai.selectBestSource(searchResults, question);
+          ensureActive();
 
-          controller.enqueue(
+          send(
             encoder.encode(
               `data: ${JSON.stringify({
                 type: 'status',
@@ -182,7 +207,7 @@ export async function POST(request: NextRequest) {
           );
 
           // Step 4: Reading content
-          controller.enqueue(
+          send(
             encoder.encode(
               `data: ${JSON.stringify({
                 type: 'status',
@@ -194,8 +219,9 @@ export async function POST(request: NextRequest) {
           );
 
           const scrapedData = await firecrawl.scrapeUrl(bestSource.url);
+          ensureActive();
 
-          controller.enqueue(
+          send(
             encoder.encode(
               `data: ${JSON.stringify({
                 type: 'status',
@@ -206,7 +232,7 @@ export async function POST(request: NextRequest) {
           );
 
           // Step 5: Analyzing and formulating response
-          controller.enqueue(
+          send(
             encoder.encode(
               `data: ${JSON.stringify({
                 type: 'status',
@@ -226,8 +252,9 @@ export async function POST(request: NextRequest) {
             },
             bestSource.url
           );
+          ensureActive();
 
-          controller.enqueue(
+          send(
             encoder.encode(
               `data: ${JSON.stringify({
                 type: 'response',
@@ -237,15 +264,16 @@ export async function POST(request: NextRequest) {
             )
           );
 
-          controller.enqueue(
+          send(
             encoder.encode(
               `data: ${JSON.stringify({ type: 'complete' })}\n\n`
             )
           );
 
         } catch (error) {
+          if (abortController.signal.aborted) return;
           console.error('[Chat API] Error:', error);
-          controller.enqueue(
+          send(
             encoder.encode(
               `data: ${JSON.stringify({
                 type: 'error',
@@ -254,9 +282,12 @@ export async function POST(request: NextRequest) {
             )
           );
         } finally {
-          activeQueries.delete(queryId);
-          controller.close();
+          close();
         }
+        })();
+      },
+      cancel() {
+        abortController.abort();
       },
     });
 
