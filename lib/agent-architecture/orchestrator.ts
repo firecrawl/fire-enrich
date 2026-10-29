@@ -1591,41 +1591,42 @@ export class AgentOrchestrator {
     ];
     
     // Script source patterns that indicate technologies
-    const scriptPatterns = [
+    const scriptPatterns: Array<[RegExp, string]> = [
       // React
-      /react(?:\.min)?\.js/i,
-      /react-dom(?:\.min)?\.js/i,
+      [/react(?:\.min)?\.js/i, 'React'],
+      [/react-dom(?:\.min)?\.js/i, 'React'],
       
       // Angular
-      /angular(?:\.min)?\.js/i,
-      /zone\.js/i,
+      [/angular(?:\.min)?\.js/i, 'Angular'],
+      [/zone\.js/i, 'Zone.js'],
       
       // Vue
-      /vue(?:\.min)?\.js/i,
+      [/vue(?:\.min)?\.js/i, 'Vue.js'],
       
       // jQuery
-      /jquery(?:-\d+\.\d+\.\d+)?(?:\.min)?\.js/i,
+      [/jquery(?:-\d+\.\d+\.\d+)?(?:\.min)?\.js/i, 'jQuery'],
       
       // Analytics
-      /google-analytics\.com|googletagmanager\.com/i,
-      /segment\.com|segment\.io/i,
-      /hotjar\.com/i,
-      /mixpanel\.com/i,
+      [/google-analytics\.com/i, 'Google Analytics'],
+      [/googletagmanager\.com/i, 'Google Tag Manager'],
+      [/segment\.com|segment\.io/i, 'Segment'],
+      [/hotjar\.com/i, 'Hotjar'],
+      [/mixpanel\.com/i, 'Mixpanel'],
       
       // CDNs and frameworks
-      /bootstrap(?:\.min)?\.(?:js|css)/i,
-      /tailwind(?:css)?/i,
-      /material(?:ize)?(?:\.min)?\.(?:js|css)/i,
+      [/bootstrap(?:\.min)?\.(?:js|css)/i, 'Bootstrap'],
+      [/tailwind(?:css)?/i, 'Tailwind CSS'],
+      [/materialize(?:\.min)?\.(?:js|css)/i, 'Materialize'],
+      [/material(?:\.min)?\.(?:js|css)/i, 'Material Design'],
       
-      // Webpack/bundlers
-      /webpack/i,
-      /bundle\.\w+\.js/i,
+      // A generic bundle filename does not identify its bundler.
+      [/webpack/i, 'Webpack'],
       
       // Next.js
-      /_next\/static/i,
+      [/_next\/static/i, 'Next.js'],
       
       // Gatsby
-      /gatsby/i,
+      [/gatsby/i, 'Gatsby'],
     ];
     
     // Check meta tags
@@ -1664,20 +1665,9 @@ export class AgentOrchestrator {
       const src = match[1];
       
       // Check against patterns
-      for (const pattern of scriptPatterns) {
+      for (const [pattern, technology] of scriptPatterns) {
         if (pattern.test(src)) {
-          // Extract technology name from pattern
-          const techName = pattern.source
-            .replace(/[\\^$.*+?()[\]{}|]/g, '')
-            .replace(/\(\?:-?\d\+\\\.\d\+\\\.\d\+\)/g, '')
-            .replace(/\(\?:\\.min\)/g, '')
-            .replace(/\\\./g, '.')
-            .replace(/\//g, '')
-            .split(/[.-]/)[0];
-          
-          if (techName && techName.length > 2) {
-            technologies.add(techName.charAt(0).toUpperCase() + techName.slice(1));
-          }
+          technologies.add(technology);
         }
       }
       
