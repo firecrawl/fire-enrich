@@ -637,6 +637,30 @@ REMEMBER: Extract exact_text from the "=== ACTUAL CONTENT BELOW ===" section, NO
           
           // Only create result if we have a valid value
           if (consensusValue !== null && consensusValue !== undefined && consensusValue !== '') {
+            // Numeric consensus must come from evidence that survived validation.
+            if (field.type === 'number' && !validEvidence.some(
+              (e: { value: unknown }) => typeof e.value === 'number' && e.value === consensusValue
+            )) {
+              console.log(`[VALIDATION] No validated evidence supports numeric consensus for ${field.name}, skipping field`);
+              return;
+            }
+
+            // Text, boolean and list consensus must also be supported by the
+            // values that survived evidence validation. Lists may combine
+            // members from multiple sources, but may not invent new members.
+            const sameText = (a: unknown, b: unknown) => typeof a === 'string' && typeof b === 'string'
+              && a.trim().replace(/\s+/g, ' ').toLowerCase() === b.trim().replace(/\s+/g, ' ').toLowerCase();
+            const supported = field.type === 'string'
+              ? validEvidence.some((e: { value: unknown }) => sameText(e.value, consensusValue))
+              : field.type === 'boolean'
+                ? typeof consensusValue === 'boolean' && validEvidence.some((e: { value: unknown }) => e.value === consensusValue)
+                : field.type === 'array'
+                  ? Array.isArray(consensusValue) && consensusValue.length > 0 && consensusValue.every(item => typeof item === 'string'
+                    && validEvidence.some((e: { value: unknown }) => Array.isArray(e.value)
+                      && e.value.some(member => sameText(member, item))))
+                  : true;
+            if (!supported) return;
+
             // Filter sourceContext to only include validated evidence
             const validSourceContext = validEvidence
               .filter((e: { exact_text: string }) => e.exact_text && e.exact_text.trim() !== '')
