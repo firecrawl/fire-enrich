@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,9 @@ export default function CSVEnrichmentPage() {
     columns: string[];
   } | null>(null);
 
+  const uploadGeneration = useRef(0);
+  useEffect(() => () => { uploadGeneration.current++; }, []);
+
   // Check environment status on component mount
   useEffect(() => {
     const checkEnvironment = async () => {
@@ -80,9 +83,11 @@ export default function CSVEnrichmentPage() {
   }, []);
 
   const handleCSVUpload = async (rows: CSVRow[], columns: string[]) => {
+    const generation = ++uploadGeneration.current;
     // Check if we have Firecrawl API key
     const response = await fetch("/api/check-env");
     const data = await response.json();
+    if (generation !== uploadGeneration.current) return;
     const hasFirecrawl = data.environmentStatus.FIRECRAWL_API_KEY;
     const hasOpenAI = data.environmentStatus.OPENAI_API_KEY;
     const savedFirecrawlKey = localStorage.getItem("firecrawl_api_key");
