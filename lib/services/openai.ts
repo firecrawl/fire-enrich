@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
 import { zodResponseFormat } from 'openai/helpers/zod';
+import { isGroundedEvidence } from '../utils/source-evidence';
 import type { EnrichmentField, EnrichmentResult } from '../types';
 
 export class OpenAIService {
@@ -267,6 +268,10 @@ DOMAIN PARKING/SALE PAGES:
         let confidence = parsed[`${field.name}_confidence`] as number;
         const sourcesWithQuotes = parsed[`${field.name}_sources`] as Array<{url: string, quote: string}> | null;
         
+        const groundedSources = Array.isArray(sourcesWithQuotes)
+          ? sourcesWithQuotes.filter(source => source && isGroundedEvidence(trimmedContent, source.url, source.quote))
+          : [];
+
         // Filter out invalid placeholder values
         if (value === '/' || value === '-' || value === 'N/A' || value === 'n/a') {
           value = null;
@@ -308,16 +313,16 @@ DOMAIN PARKING/SALE PAGES:
         
         // Only include results with actual data found (confidence > 0.3)
         // This prevents hallucinated data from being shown
-        if (value !== null && value !== undefined && confidence > 0.3) {
+        if (value !== null && value !== undefined && confidence > 0.3 && groundedSources.length > 0) {
           results[field.name] = {
             field: field.name,
             value,
             confidence,
-            source: sourcesWithQuotes ? sourcesWithQuotes.map(s => s.url).join(', ') : 'structured_extraction',
-            sourceContext: sourcesWithQuotes ? sourcesWithQuotes.map(s => ({
+            source: groundedSources.map(s => s.url).join(', '),
+            sourceContext: groundedSources.map(s => ({
               url: s.url,
               snippet: s.quote
-            })) : undefined,
+            })),
             // Don't set sourceCount here - let the UI count actual sources after filtering
           };
         }
@@ -549,6 +554,11 @@ REMEMBER: Extract exact_text from the "=== ACTUAL CONTENT BELOW ===" section, NO
               }
             }
             
+            // A model can produce a plausible URL and sentence together. They
+            // are evidence only when that exact sentence occurs in the body
+            // supplied for that URL, within the content actually sent above.
+            if (!isGroundedEvidence(trimmedContent, e.source_url, e.exact_text)) return false;
+
             // More robust title detection
             const textLower = e.exact_text ? e.exact_text.toLowerCase() : '';
             const hasSentenceEnding = /[.!?]/.test(e.exact_text);
