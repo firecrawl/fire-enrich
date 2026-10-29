@@ -487,12 +487,14 @@ export function EnrichmentTable({
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
+      return true;
     } catch (err) {
       console.error("Failed to copy:", err);
+      return false;
     }
   };
 
-  const copyRowData = (rowIndex: number) => {
+  const copyRowData = async (rowIndex: number) => {
     const result = results.get(rowIndex);
     const row = rows[rowIndex];
     if (!result || !row) return;
@@ -521,7 +523,10 @@ export function EnrichmentTable({
       formattedData += "\n\n";
     });
 
-    copyToClipboard(formattedData.trim());
+    if (!await copyToClipboard(formattedData.trim())) {
+      toast.error("Could not copy row data. Allow clipboard access and try again.");
+      return;
+    }
 
     // Show copied feedback
     setCopiedRow(rowIndex);
@@ -1424,8 +1429,7 @@ export function EnrichmentTable({
                 <div className="pt-6 pb-4 border-t border-gray-200 space-y-3">
                   <button
                     onClick={() => {
-                      copyRowData(selectedRow.index);
-                      toast.success("Row data copied to clipboard!");
+                      void copyRowData(selectedRow.index);
                     }}
                     className="w-full rounded-8 px-10 py-6 gap-4 text-label-medium text-accent-black bg-black-alpha-4 hover:bg-black-alpha-6 transition-colors flex items-center justify-center"
                   >
