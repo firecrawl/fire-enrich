@@ -44,6 +44,9 @@ export function EnrichmentTable({
   const [results, setResults] = useState<Map<number, RowEnrichmentResult>>(
     new Map(),
   );
+  const processedRowCount = Array.from(results.values()).filter(
+    (result) => result.status === "completed" || result.status === "skipped" || result.status === "error",
+  ).length;
   const [status, setStatus] = useState<
     "idle" | "processing" | "completed" | "cancelled"
   >("idle");
@@ -386,7 +389,7 @@ export function EnrichmentTable({
       metadata: {
         exportDate: new Date().toISOString(),
         totalRows: rows.length,
-        processedRows: results.size,
+        processedRows: processedRowCount,
         fields: fields.map((f) => ({
           name: f.name,
           displayName: f.displayName,
@@ -402,7 +405,7 @@ export function EnrichmentTable({
           _index: index,
           _email: email,
           _original: row,
-          _status: result ? "enriched" : "pending",
+          _status: result?.status === "completed" ? "enriched" : result?.status || "pending",
         };
 
         if (result) {
@@ -606,7 +609,7 @@ export function EnrichmentTable({
             emailColumn,
             fields: fields.map((f) => ({ name: f.name, displayName: f.displayName })),
             totalRows: rows.length,
-            processedRows: results.size,
+            processedRows: processedRowCount,
             tableData: tableDataString, // Include formatted table data as string
           },
           conversationHistory,
@@ -763,7 +766,7 @@ export function EnrichmentTable({
               </h3>
               <div className="flex items-center gap-4 mt-1">
                 <span className="text-body-small text-zinc-600">
-                  {results.size} of {rows.length} rows processed
+                  {processedRowCount} of {rows.length} rows processed
                 </span>
                 {(() => {
                   const skippedCount = Array.from(results.values()).filter(
