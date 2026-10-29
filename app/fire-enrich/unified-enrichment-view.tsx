@@ -150,11 +150,13 @@ export function UnifiedEnrichmentView({
   const handleAddField = (field: EnrichmentField) => {
     if (selectedFields.length >= 10) {
       toast.error("Maximum 10 fields allowed");
-      return;
+      return false;
     }
     if (!selectedFields.find((f) => f.name === field.name)) {
       setSelectedFields([...selectedFields, field]);
+      return true;
     }
+    return false;
   };
 
   const handleRemoveField = (fieldName: string) => {
@@ -811,12 +813,13 @@ export function UnifiedEnrichmentView({
                         <div className="flex gap-6 flex-shrink-0">
                           <button
                             onClick={() => {
-                              handleAddField(field);
+                              if (!handleAddField(field)) return;
                               setSuggestedFields(
                                 suggestedFields.filter((_, i) => i !== idx),
                               );
                             }}
-                            className="px-12 py-6 bg-gray-900 text-white text-body-medium rounded-6 hover:bg-gray-800 transition-colors font-medium whitespace-nowrap"
+                            disabled={selectedFields.length >= 10}
+                            className="px-12 py-6 bg-gray-900 text-white text-body-medium rounded-6 hover:bg-gray-800 transition-colors font-medium whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             Accept
                           </button>
