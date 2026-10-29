@@ -1,6 +1,8 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
+import { getIP } from "./client-ip";
+export { getIP } from "./client-ip";
 
 // Create a new ratelimiter that allows 50 requests per day per IP per endpoint
 export const getRateLimiter = (endpoint: string) => {
@@ -21,23 +23,6 @@ export const getRateLimiter = (endpoint: string) => {
     analytics: true,
     prefix: `ratelimit:${endpoint}`,
   });
-};
-
-// Helper function to get the IP from a NextRequest or default to a placeholder
-export const getIP = (request: NextRequest): string => {
-  const forwarded = request.headers.get("x-forwarded-for");
-  const realIp = request.headers.get("x-real-ip");
-  
-  if (forwarded) {
-    return forwarded.split(/, /)[0];
-  }
-  
-  if (realIp) {
-    return realIp;
-  }
-  
-  // Default to placeholder IP if none found
-  return "127.0.0.1";
 };
 
 // Helper function to check if a request is rate limited
