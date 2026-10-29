@@ -51,12 +51,12 @@ export function EnrichmentTable({
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [useAgents] = useState(true); // Default to using agents
   const [expandedAgentLogs, setExpandedAgentLogs] = useState(false);
-  const [selectedRow, setSelectedRow] = useState<{
-    isOpen: boolean;
-    row: CSVRow | null;
-    result: RowEnrichmentResult | undefined;
-    index: number;
-  }>({ isOpen: false, row: null, result: undefined, index: -1 });
+  const [selection, setSelectedRow] = useState({ isOpen: false, index: -1 });
+  const selectedRow = {
+    ...selection,
+    row: rows[selection.index] ?? null,
+    result: results.get(selection.index),
+  };
   const [copiedRow, setCopiedRow] = useState<number | null>(null);
   const [expandedSources, setExpandedSources] = useState<Set<string>>(
     new Set(),
@@ -530,9 +530,7 @@ export function EnrichmentTable({
   };
 
   const openDetailSidebar = (rowIndex: number) => {
-    const row = rows[rowIndex];
-    const result = results.get(rowIndex);
-    setSelectedRow({ isOpen: true, row, result, index: rowIndex });
+    setSelectedRow({ isOpen: true, index: rowIndex });
   };
 
   const handleChatMessage = async (message: string) => {
@@ -1079,7 +1077,7 @@ export function EnrichmentTable({
       <Dialog
         open={selectedRow.isOpen}
         onOpenChange={(open) =>
-          setSelectedRow({ ...selectedRow, isOpen: open })
+          setSelectedRow((current) => ({ ...current, isOpen: open }))
         }
       >
         <DialogContent className="bg-white max-w-2xl max-h-[80vh] overflow-y-auto">
