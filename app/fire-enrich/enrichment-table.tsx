@@ -45,7 +45,7 @@ export function EnrichmentTable({
     new Map(),
   );
   const [status, setStatus] = useState<
-    "idle" | "processing" | "completed" | "cancelled"
+    "idle" | "processing" | "completed" | "cancelled" | "error"
   >("idle");
   const [currentRow, setCurrentRow] = useState(-1);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -257,7 +257,8 @@ export function EnrichmentTable({
 
                 case "error":
                   console.error("Enrichment error:", data.error);
-                  setStatus("completed");
+                  setStatus("error");
+                  toast.error("Enrichment failed. Please try again.");
                   break;
 
                 case "agent_progress":
@@ -287,7 +288,8 @@ export function EnrichmentTable({
       }
     } catch (error) {
       console.error("Failed to start enrichment:", error);
-      setStatus("completed");
+      setStatus("error");
+      toast.error("Enrichment failed. Please try again.");
     }
   }, [fields, rows, emailColumn, useAgents]);
 
@@ -759,7 +761,9 @@ export function EnrichmentTable({
                   ? "Enriching Data"
                   : status === "completed"
                     ? "Enrichment Complete"
-                    : "Enrichment Cancelled"}
+                    : status === "error"
+                      ? "Enrichment Failed"
+                      : "Enrichment Cancelled"}
               </h3>
               <div className="flex items-center gap-4 mt-1">
                 <span className="text-body-small text-zinc-600">
@@ -784,6 +788,7 @@ export function EnrichmentTable({
             <div className="flex items-center gap-3">
               {(status === "completed" ||
                 status === "cancelled" ||
+                status === "error" ||
                 (status === "processing" && results.size > 0)) && (
                 <>
                   <button
