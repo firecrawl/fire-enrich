@@ -985,6 +985,7 @@ Question: ${question}
 
       // Check for NOT_FOUND or generic table descriptions
       const isGenericAnswer =
+        !answer ||
         answer === 'NOT_FOUND' ||
         answer.includes('NOT_FOUND') ||
         (answer.toLowerCase().includes('table contains') && answer.toLowerCase().includes('rows')) ||
