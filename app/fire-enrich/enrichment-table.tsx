@@ -69,6 +69,8 @@ export function EnrichmentTable({
   const [isChatExpanded, setIsChatExpanded] = useState(true);
   const agentMessagesEndRef = useRef<HTMLDivElement>(null);
   const activityScrollRef = useRef<HTMLDivElement>(null);
+  const chatControllerRef = useRef<AbortController | null>(null);
+  useEffect(() => () => chatControllerRef.current?.abort(), []);
 
   // Track when each row's data arrives
   const [rowDataArrivalTime, setRowDataArrivalTime] = useState<
@@ -536,6 +538,9 @@ export function EnrichmentTable({
   };
 
   const handleChatMessage = async (message: string) => {
+    chatControllerRef.current?.abort();
+    const controller = new AbortController();
+    chatControllerRef.current = controller;
     const queryId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     setChatQueryId(queryId);
     setIsChatProcessing(true);
@@ -599,6 +604,7 @@ export function EnrichmentTable({
 
       const response = await fetch("/api/chat", {
         method: "POST",
+        signal: controller.signal,
         headers,
         body: JSON.stringify({
           question: message,
@@ -623,9 +629,9 @@ export function EnrichmentTable({
 
       if (!reader) throw new Error("No response body");
 
-      while (true) {
+      while (!controller.signal.aborted) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done || controller.signal.aborted) break;
 
         const text = decoder.decode(value);
         const lines = text.split("\n");
@@ -674,6 +680,7 @@ export function EnrichmentTable({
         }
       }
     } catch (error) {
+      if (controller.signal.aborted) return;
       console.error("Chat error:", error);
       setAgentMessages((prev) => [
         ...prev,
@@ -685,12 +692,18 @@ export function EnrichmentTable({
         },
       ]);
     } finally {
-      setIsChatProcessing(false);
-      setChatQueryId(null);
+      if (chatControllerRef.current === controller) {
+        chatControllerRef.current = null;
+        setIsChatProcessing(false);
+        setChatQueryId(null);
+      }
     }
   };
 
   const handleStopQuery = async () => {
+    chatControllerRef.current?.abort();
+    setIsChatProcessing(false);
+    setChatQueryId(null);
     if (chatQueryId) {
       try {
         await fetch(`/api/chat?queryId=${chatQueryId}`, {
@@ -699,8 +712,6 @@ export function EnrichmentTable({
       } catch (error) {
         console.error("Failed to stop query:", error);
       }
-      setIsChatProcessing(false);
-      setChatQueryId(null);
     }
   };
 
