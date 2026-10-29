@@ -3,6 +3,25 @@ import { z } from 'zod';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import type { EnrichmentField, EnrichmentResult } from '../types';
 
+// Compare quotations without treating line wrapping or typographic quotes as new facts.
+function normalizeSourceText(text: string): string {
+  return text.replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim();
+}
+
+function providedSourceContents(content: string): Map<string, string[]> {
+  const sources = new Map<string, string[]>();
+  const headers = Array.from(content.matchAll(/^URL:[ \t]*(\S+)[ \t]*\r?$/gm));
+  headers.forEach((header, index) => {
+    let body = content.slice(header.index! + header[0].length, headers[index + 1]?.index ?? content.length);
+    const marker = '=== ACTUAL CONTENT BELOW ===';
+    const markerIndex = body.indexOf(marker);
+    if (markerIndex !== -1) body = body.slice(markerIndex + marker.length);
+    const previous = sources.get(header[1]) || [];
+    sources.set(header[1], [...previous, normalizeSourceText(body)]);
+  });
+  return sources;
+}
+
 export class OpenAIService {
   private client: OpenAI;
 
@@ -511,6 +530,9 @@ REMEMBER: Extract exact_text from the "=== ACTUAL CONTENT BELOW ===" section, NO
       // Import validation function
       const { validateSnippetContainsValue } = await import('../utils/source-context');
 
+      // Validate against exactly the source text supplied to the model, after truncation.
+      const providedSources = providedSourceContents(trimmedContent);
+
       // Transform corroborated data into EnrichmentResult format
       const results: Record<string, EnrichmentResult> = {};
       
@@ -530,6 +552,13 @@ REMEMBER: Extract exact_text from the "=== ACTUAL CONTENT BELOW ===" section, NO
               return false;
             }
             
+            const quote = normalizeSourceText(e.exact_text);
+            const sourceContents = providedSources.get(e.source_url);
+            if (!sourceContents?.some(sourceContent => sourceContent.includes(quote))) {
+              console.log(`[VALIDATION] Rejecting evidence not present in its provided source for ${field.name}`);
+              return false;
+            }
+
             // Validate URL format and common hallucination patterns
             if (e.source_url) {
               try {
