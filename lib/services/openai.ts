@@ -3,6 +3,23 @@ import { z } from 'zod';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import type { EnrichmentField, EnrichmentResult } from '../types';
 
+function enrichmentMetadataKeys(fields: EnrichmentField[]) {
+  const reserved = new Set(fields.map(field => field.name));
+  const keys = new Map<string, { confidence: string; sources: string }>();
+  const reserve = (preferred: string) => {
+    let key = preferred;
+    let suffix = 1;
+    while (reserved.has(key)) key = `${preferred}_${suffix++}`;
+    reserved.add(key);
+    return key;
+  };
+  fields.forEach(field => keys.set(field.name, {
+    confidence: reserve(`${field.name}_confidence`),
+    sources: reserve(`${field.name}_sources`),
+  }));
+  return keys;
+}
+
 export class OpenAIService {
   private client: OpenAI;
 
@@ -12,6 +29,7 @@ export class OpenAIService {
 
   createEnrichmentSchema(fields: EnrichmentField[]) {
     const schemaProperties: Record<string, z.ZodTypeAny> = {};
+    const metadataKeys = enrichmentMetadataKeys(fields);
 
     fields.forEach(field => {
       let fieldSchema: z.ZodTypeAny;
@@ -44,9 +62,10 @@ export class OpenAIService {
     const confidenceProperties: Record<string, z.ZodTypeAny> = {};
     const sourceEvidenceProperties: Record<string, z.ZodTypeAny> = {};
     fields.forEach(field => {
-      confidenceProperties[`${field.name}_confidence`] = z.number().min(0).max(1);
+      const keys = metadataKeys.get(field.name)!;
+      confidenceProperties[keys.confidence] = z.number().min(0).max(1);
       // Each field can have multiple sources with their own quotes
-      sourceEvidenceProperties[`${field.name}_sources`] = z.array(z.object({
+      sourceEvidenceProperties[keys.sources] = z.array(z.object({
         url: z.string(),
         quote: z.string()
       })).nullable();
@@ -110,9 +129,19 @@ export class OpenAIService {
   ): Promise<Record<string, EnrichmentResult>> {
     try {
       const schema = this.createEnrichmentSchema(fields);
+      const metadataKeys = enrichmentMetadataKeys(fields);
       const fieldDescriptions = fields
         .map(f => `- ${f.name}: ${f.description}`)
         .join('\n');
+      const metadataOverrides = fields.flatMap(field => {
+        const keys = metadataKeys.get(field.name)!;
+        return keys.confidence === `${field.name}_confidence` && keys.sources === `${field.name}_sources`
+          ? []
+          : [`- ${JSON.stringify(field.name)}: confidence property ${JSON.stringify(keys.confidence)}, sources property ${JSON.stringify(keys.sources)}`];
+      });
+      const metadataInstructions = metadataOverrides.length
+        ? `\n\nFor these fields, use the following metadata properties to avoid overwriting requested values:\n${metadataOverrides.join('\n')}`
+        : '';
 
       // Format context to emphasize company identity
       
@@ -219,7 +248,7 @@ ${contextInfo}
 - If you find information about CLEARLY DIFFERENT companies, IGNORE IT
 
 Fields to extract for the TARGET ENTITY ONLY:
-${fieldDescriptions}
+${fieldDescriptions}${metadataInstructions}
 
 ADDITIONAL GUIDELINES:
 1. Employee Count: Must be explicitly stated. Look for phrases like "X employees", "team of X", "X people". If not found, return null.
@@ -264,8 +293,9 @@ DOMAIN PARKING/SALE PAGES:
       
       fields.forEach(field => {
         let value = parsed[field.name];
-        let confidence = parsed[`${field.name}_confidence`] as number;
-        const sourcesWithQuotes = parsed[`${field.name}_sources`] as Array<{url: string, quote: string}> | null;
+        const keys = metadataKeys.get(field.name)!;
+        let confidence = parsed[keys.confidence] as number;
+        const sourcesWithQuotes = parsed[keys.sources] as Array<{url: string, quote: string}> | null;
         
         // Filter out invalid placeholder values
         if (value === '/' || value === '-' || value === 'N/A' || value === 'n/a') {
