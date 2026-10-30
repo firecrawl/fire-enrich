@@ -35,7 +35,7 @@ export async function loadSkipList(): Promise<Set<string>> {
 }
 
 export function shouldSkipEmail(email: string, skipList: Set<string>): boolean {
-  const domain = email.split('@')[1]?.toLowerCase();
+  const domain = email.trim().split('@')[1]?.toLowerCase();
   if (!domain) return false;
   
   // Check exact domain match
@@ -48,7 +48,7 @@ export function shouldSkipEmail(email: string, skipList: Set<string>): boolean {
 }
 
 export function getSkipReason(email: string, skipList: Set<string>): string {
-  const domain = email.split('@')[1]?.toLowerCase();
+  const domain = email.trim().split('@')[1]?.toLowerCase();
   if (!domain) return 'Invalid email';
   
   if (skipList.has(domain)) {
