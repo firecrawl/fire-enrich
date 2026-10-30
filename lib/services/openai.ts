@@ -513,16 +513,30 @@ REMEMBER: Extract exact_text from the "=== ACTUAL CONTENT BELOW ===" section, NO
 
       // Transform corroborated data into EnrichmentResult format
       const results: Record<string, EnrichmentResult> = {};
+      // The orchestrator passes this context as a comma-separated string.
+      // Keep legacy array callers working, and validate before projecting any sources.
+      const githubUrlContext: unknown = context.validGithubUrls;
+      const validGithubUrls = new Set(
+        (typeof githubUrlContext === 'string'
+          ? githubUrlContext.split(/,\s+/)
+          : Array.isArray(githubUrlContext) ? githubUrlContext.filter((url): url is string => typeof url === 'string') : [])
+          .map(url => url.trim()).filter(Boolean)
+      );
       
       fields.forEach(field => {
         const fieldData = parsed[field.name];
         if (!fieldData) return;
+        const isTechStackField = field.name.toLowerCase().includes('tech') || field.name.toLowerCase().includes('stack');
         
         // Only include if we have actual evidence with good confidence
         const validEvidence = fieldData.evidence.filter(
           (e: { value: unknown; confidence: number; exact_text: string; source_url: string }) => {
             // Basic validation
             if (e.value === null || e.confidence < 0.2) return false;
+            if (isTechStackField && e.source_url && e.source_url.includes('github.com') && !validGithubUrls.has(e.source_url)) {
+              console.log(`[VALIDATION] Removing hallucinated GitHub URL from evidence: ${e.source_url}`);
+              return false;
+            }
             
             // CRITICAL: Reject empty or missing evidence text
             if (!e.exact_text || e.exact_text.trim() === '') {
@@ -698,23 +712,7 @@ REMEMBER: Extract exact_text from the "=== ACTUAL CONTENT BELOW ===" section, NO
               };
           
             // Additional validation for tech stack fields
-            if (field.name.toLowerCase().includes('tech') || field.name.toLowerCase().includes('stack')) {
-              // Validate GitHub URLs in evidence
-              if (enrichmentResult.corroboration) {
-                enrichmentResult.corroboration.evidence = enrichmentResult.corroboration.evidence.filter((e) => {
-                if (e.source_url && e.source_url.includes('github.com')) {
-                  // Check if this GitHub URL was provided in the context
-                  const validGithubUrls = Array.isArray(context.validGithubUrls) ? context.validGithubUrls as string[] : [];
-                  const isValid = validGithubUrls.includes(e.source_url);
-                  if (!isValid) {
-                    console.log(`[VALIDATION] Removing hallucinated GitHub URL from evidence: ${e.source_url}`);
-                    return false;
-                  }
-                }
-                return true;
-                });
-              }
-              
+            if (isTechStackField) {
               // Validate tech stack values
               if (Array.isArray(enrichmentResult.value)) {
                 const genericTechs = ['website', 'web', 'internet', 'computer', 'software', 'technology', 'platform', 'system', 'application'];
