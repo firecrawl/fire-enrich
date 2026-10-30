@@ -66,6 +66,11 @@ test('retains every provided URL from a comma-separated context with whitespace'
   const { result } = await extract([evidence(github), evidence(secondGithub)], { validGithubUrls: ` ${github}, ${secondGithub} ` });
   assertSources(result, [github, secondGithub]);
 });
+test('preserves commas inside URLs when decoding the producer delimiter', async () => {
+  const fileUrl = `${github}/blob/main/README,old.md`;
+  const { result } = await extract([evidence(fileUrl), evidence(secondGithub)], { validGithubUrls: [fileUrl, secondGithub].join(', ') });
+  assertSources(result, [fileUrl, secondGithub]);
+});
 test('retains legacy array contexts', async () => {
   assertSources((await extract([evidence(github)], { validGithubUrls: [github] })).result, [github]);
 });

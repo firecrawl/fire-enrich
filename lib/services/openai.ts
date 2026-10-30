@@ -518,7 +518,7 @@ REMEMBER: Extract exact_text from the "=== ACTUAL CONTENT BELOW ===" section, NO
       const githubUrlContext: unknown = context.validGithubUrls;
       const validGithubUrls = new Set(
         (typeof githubUrlContext === 'string'
-          ? githubUrlContext.split(',')
+          ? githubUrlContext.split(/,\s+/)
           : Array.isArray(githubUrlContext) ? githubUrlContext.filter((url): url is string => typeof url === 'string') : [])
           .map(url => url.trim()).filter(Boolean)
       );
